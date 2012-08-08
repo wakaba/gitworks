@@ -46,15 +46,22 @@ test {
     my $action = GW::Action::ProcessJobs->new;
     my $jobs = $action->get_jobs;
     is $jobs->length, 1;
+    ok $jobs->[0]->{job_id};
     eq_or_diff $jobs->[0], {
+        job_id => $jobs->[0]->{job_id},
         repository_url => $url,
         repository_branch => $branch,
         repository_revision => $hash,
         action_type => 'testaction1',
         args => {12 => 31},
     };
+
+    $action->delete_job($jobs->[0]->{id});
+    $action->delete_job(5213233);
+
+    is $action->get_jobs->length, 0;
     
     $c->done;
-} n => 2, wait => $mysql_cv;
+} n => 4, wait => $mysql_cv;
 
 run_tests;

@@ -42,6 +42,7 @@ sub get_jobs {
     )->all_as_rows->map(sub {
         my $job = $_;
         return {
+            job_id => $job->get('id'),
             repository_url => $job->get('repository_url'),
             repository_branch => $job->get('repository_branch'),
             repository_revision => $job->get('repository_revision'),
@@ -49,6 +50,13 @@ sub get_jobs {
             args => $job->get('args'),
         };
     });
+}
+
+sub delete_job {
+    my ($self, $job_id) = @_;
+
+    my $db = Dongry::Database->load('gitworks');
+    $db->delete('job', {id => $job_id});
 }
 
 1;
