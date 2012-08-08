@@ -3,6 +3,7 @@ CREATE TABLE job (
   created BIGINT UNSIGNED NOT NULL DEFAULT 0,
 
   repository_url VARBINARY(1023) NOT NULL,
+  repository_branch VARBINARY(1023) NOT NULL,
   repository_revision VARBINARY(1023) NOT NULL,
   action_type VARBINARY(127) NOT NULL,
   args BLOB NOT NULL,

@@ -14,8 +14,9 @@ test {
     my $c = shift;
 
     my $url = q<git://hoge/fuga> . rand;
+    my $branch = q<devel/hoge>;
     my $hash = q<12344abc>;
-    my $act = GW::Action::InsertJob->new_from_repository($url, $hash);
+    my $act = GW::Action::InsertJob->new_from_repository($url, $branch, $hash);
 
     $act->insert_job('testaction1', {12 => 31});
 
@@ -23,10 +24,11 @@ test {
     ok $row;
     ok $row->get('id');
     is $row->get('repository_revision'), $hash;
+    is $row->get('repository_branch'), $branch;
     is $row->get('action_type'), 'testaction1';
     eq_or_diff $row->get('args'), {12 => 31};
     
     $c->done;
-};
+} n => 6;
 
 run_tests;

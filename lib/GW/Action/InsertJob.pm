@@ -2,13 +2,22 @@ package GW::Action::InsertJob;
 use strict;
 use warnings;
 use Dongry::Database;
+use GW::MySQL;
 
 sub new_from_repository {
-    return bless {repository_url => $_[1], repository_revision => $_[2]}, $_[0];
+    return bless {
+        repository_url => $_[1],
+        repository_branch => $_[2],
+        repository_revision => $_[3],
+    }, $_[0];
 }
 
 sub repository_url {
     return $_[0]->{repository_url};
+}
+
+sub repository_branch {
+    return $_[0]->{repository_branch};
 }
 
 sub repository_revision {
@@ -25,6 +34,7 @@ sub insert_job {
             created => time,
             
             repository_url => $self->repository_url,
+            repository_branch => $self->repository_branch,
             repository_revision => $self->repository_revision,
             action_type => $action_type,
             args => $args,
