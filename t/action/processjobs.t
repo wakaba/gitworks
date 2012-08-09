@@ -12,6 +12,7 @@ use Test::AnyEvent::MySQL::CreateDatabase;
 use GW::Action::InsertJob;
 use GW::Action::ProcessJobs;
 use Path::Class;
+use File::Temp qw(tempdir);
 
 my $root_d = file(__FILE__)->dir->parent->parent;
 my $prep_f = $root_d->file('db', 'preparation.txt');
@@ -63,5 +64,62 @@ test {
     
     $c->done;
 } n => 4, wait => $mysql_cv;
+
+test {
+    my $c = shift;
+
+    local $Dongry::Database::Registry = {};
+    GW::MySQL->load_by_f($c->received_data->json_f);
+
+    my $temp_d = dir(tempdir(CLEANUP => 1));
+    my $temp2_d = dir(tempdir(CLEANUP => 1));
+    system "cd $temp_d && git init && echo 'hoge:\n\techo 1234 > @{[$temp2_d]}/foo.txt' > Makefile && git add Makefile && git commit -m New";
+    my $rev = `cd $temp_d && git rev-parse HEAD`;
+
+    my $job_action = GW::Action::InsertJob->new_from_repository(
+        $temp_d->stringify,
+        'master',
+        $rev,
+    );
+    $job_action->insert_job('make', {rule => 'hoge'});
+
+    my $process_action = GW::Action::ProcessJobs->new;
+    $process_action->process_jobs_as_cv->cb(sub {
+        test {
+            is scalar $temp2_d->file('foo.txt')->slurp, "1234\n";
+            done $c;
+        } $c;
+    });
+} n => 1, wait => $mysql_cv, name => 'process_jobs a job';
+
+test {
+    my $c = shift;
+
+    local $Dongry::Database::Registry = {};
+    GW::MySQL->load_by_f($c->received_data->json_f);
+
+    my $temp2_d = dir(tempdir(CLEANUP => 1));
+    for my $i (1..2) {
+        my $temp_d = dir(tempdir(CLEANUP => 1));
+        system "cd $temp_d && git init && echo 'hoge:\n\techo 1234-$i > @{[$temp2_d]}/foo-$i.txt' > Makefile && git add Makefile && git commit -m New";
+        my $rev = `cd $temp_d && git rev-parse HEAD`;
+        
+        my $job_action = GW::Action::InsertJob->new_from_repository(
+            $temp_d->stringify,
+            'master',
+            $rev,
+        );
+        $job_action->insert_job('make', {rule => 'hoge'});
+    }
+
+    my $process_action = GW::Action::ProcessJobs->new;
+    $process_action->process_jobs_as_cv->cb(sub {
+        test {
+            is scalar $temp2_d->file('foo-1.txt')->slurp, "1234-1\n";
+            is scalar $temp2_d->file('foo-2.txt')->slurp, "1234-2\n";
+            done $c;
+        } $c;
+    });
+} n => 2, wait => $mysql_cv, name => 'process_jobs multiple job';
 
 run_tests;
