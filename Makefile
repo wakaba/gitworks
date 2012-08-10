@@ -30,15 +30,14 @@ git-submodules:
 
 # ------ Tests ------
 
-PERL_ENV = PATH="bin/perl-$(PERL_VERSION)/pm/bin:$(PERL_PATH):$(PATH)" PERL5LIB="$(shell cat config/perl/libs.txt)"
+PERL_ENV = PATH="$(abspath local/perl-$(PERL_VERSION)/pm/bin):$(PERL_PATH):$(PATH)" PERL5LIB="$(shell cat config/perl/libs.txt)"
 PREPARE_DB_SET_PL = modules/rdb-utils/bin/prepare-db-set.pl
 DB_SET_JSON = t/tmp/dsns.json
 PROVE = prove
 
-test: test-deps safetest
+test: test-deps test-main
 
 test-deps: local-submodules pmb-install
 
-safetest:
+test-main:
 	$(PERL_ENV) $(PROVE) t/action/*.t t/web/*.t
-
