@@ -46,6 +46,8 @@ test {
     my $c = shift;
 
     my $host = $c->received_data->web_host;
+    my $reg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+
     http_post_data
         url => qq<http://$host/hook>,
         content => perl2json_bytes {
@@ -63,10 +65,8 @@ test {
             test {
                 is $res->code, 202;
 
-                local *Dongry::Database::Registry = {};
-                GW::MySQL->load_by_f($c->received_data->dsns_json_f);
-
                 my $action = GW::Action::ProcessJobs->new;
+                $action->db_registry($reg);
                 my $jobs = $action->get_jobs;
                 is $jobs->length, 1;
                 ok $jobs->[0]->{job_id};

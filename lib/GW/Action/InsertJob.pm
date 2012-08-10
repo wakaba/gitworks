@@ -24,10 +24,17 @@ sub repository_revision {
     return $_[0]->{repository_revision};
 }
 
+sub db_registry {
+    if (@_ > 1) {
+        $_[0]->{db_registry} = $_[1];
+    }
+    return $_[0]->{db_registry};
+}
+
 sub insert_job {
     my ($self, $action_type, $args, %opts) = @_;
     
-    my $db = Dongry::Database->load('gitworks');
+    my $db = $self->db_registry->load('gitworks');
     $db->table('job')->insert(
         [{
             id => $db->bare_sql_fragment('UUID_SHORT()'),

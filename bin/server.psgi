@@ -12,5 +12,5 @@ use warnings;
 use GW::MySQL;
 use GW::Web;
 
-GW::MySQL->load_by_env;
-return GW::Web->psgi_app;
+my $reg = GW::MySQL->load_by_env;
+return GW::Web->psgi_app($reg);

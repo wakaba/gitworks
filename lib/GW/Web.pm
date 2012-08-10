@@ -5,20 +5,21 @@ use Wanage::HTTP;
 use GW::Warabe::App;
 
 sub psgi_app {
+    my $reg = $_[1];
     return sub {
         my $http = Wanage::HTTP->new_from_psgi_env ($_[0]);
         my $app = GW::Warabe::App->new_from_http ($http);
         
         return $http->send_response(onready => sub {
             $app->execute (sub {
-                GW::Web->process ($app);
+                GW::Web->process ($app, $reg);
             });
         });
     };
 }
 
 sub process {
-    my ($class, $app) = @_;
+    my ($class, $app, $reg) = @_;
 
     my $path = $app->path_segments;
     if ($path->[0] eq 'hook') {
@@ -37,6 +38,7 @@ sub process {
             $json->{after}
                 || $app->throw_error(400, reason_phrase => 'bad after'),
         );
+        $action->db_registry($reg);
         $action->insert_job(
             $json->{hook_args}->{action_type}
                 || $app->throw_error(400, reason_phrase => 'bad hook_args.action_type'),
@@ -51,6 +53,7 @@ sub process {
         my $http = $app->http;
         require GW::Action::ProcessJobs;
         my $action = GW::Action::ProcessJobs->new;
+        $action->db_registry($reg);
         $action->onmessage(sub {
             my ($msg, %args) = @_;
             my $message = '[' . (scalar gmtime) . '] ' . $msg . "\n";

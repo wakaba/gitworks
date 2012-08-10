@@ -1,6 +1,7 @@
 package GW::MySQL;
 use strict;
 use warnings;
+use Dongry::Database;
 use Dongry::Type::JSON;
 use JSON::Functions::XS qw(file2perl);
 use Path::Class;
@@ -8,14 +9,16 @@ use Path::Class;
 sub load_by_env {
     my $file_name = $ENV{GW_DSNS_JSON}
         or die "|GW_DSNS_JSON| is not specified";
-    shift->load_by_f(file($file_name));
+    return $_[0]->load_by_f(file($file_name));
 }
 
 sub load_by_f {
     my (undef, $f) = @_;
     my $dsns = file2perl $f;
 
-    $Dongry::Database::Registry->{gitworks} = {
+    my $reg = Dongry::Database->create_registry;
+
+    $reg->{Registry}->{gitworks} = {
         schema => {
             job => {
                 type => {
@@ -25,9 +28,11 @@ sub load_by_f {
         },
     };
 
-    $Dongry::Database::Registry->{gitworks}->{sources}->{master}->{dsn}
+    $reg->{Registry}->{gitworks}->{sources}->{master}->{dsn}
         = $dsns->{dsns}->{gitworks} or die "|gitworks| is not defined";
-    $Dongry::Database::Registry->{gitworks}->{sources}->{master}->{writable} = 1;
+    $reg->{Registry}->{gitworks}->{sources}->{master}->{writable} = 1;
+
+    return $reg;
 }
 
 1;

@@ -25,10 +25,17 @@ sub onmessage {
     return $_[0]->{onmessage};
 }
 
+sub db_registry {
+    if (@_ > 1) {
+        $_[0]->{db_registry} = $_[1];
+    }
+    return $_[0]->{db_registry};
+}
+
 sub get_jobs {
     my $self = shift;
 
-    my $db = Dongry::Database->load('gitworks');
+    my $db = $self->db_registry->load('gitworks');
     my $pid = $db->execute(
         'SELECT UUID_SHORT() AS `id`',
         {},
@@ -66,14 +73,13 @@ sub get_jobs {
 sub delete_job {
     my ($self, $job_id) = @_;
 
-    my $db = Dongry::Database->load('gitworks');
-    $db->delete('job', {id => $job_id});
+    $self->db_registry->load('gitworks')->delete('job', {id => $job_id});
 }
 
 sub process_jobs_as_cv {
     my $self = shift;
     my $cv = AE::cv;
-    $cv->begin;
+    $cv->begin(sub { $_[0]->send });
 
     $self->get_jobs->each(sub {
         my $job = $_;

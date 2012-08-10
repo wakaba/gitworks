@@ -14,10 +14,10 @@ use GW::Action::ProcessJobs;
 test {
     my $c = shift;
 
-    local $Dongry::Database::Registry = {};
-    GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+    my $reg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
     my $action = GW::Action::ProcessJobs->new;
+    $action->db_registry($reg);
     my $jobs = $action->get_jobs;
     is $jobs->length, 0;
 
@@ -27,17 +27,17 @@ test {
 test {
     my $c = shift;
 
-    local $Dongry::Database::Registry = {};
-    GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+    my $reg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
     my $url = q<git://hoge/fuga> . rand;
     my $branch = q<devel/hoge>;
     my $hash = q<12344abc>;
     my $act = GW::Action::InsertJob->new_from_repository($url, $branch, $hash);
-
+    $act->db_registry($reg);
     $act->insert_job('testaction1', {12 => 31});
 
     my $action = GW::Action::ProcessJobs->new;
+    $action->db_registry($reg);
     my $jobs = $action->get_jobs;
     is $jobs->length, 1;
     ok $jobs->[0]->{job_id};
@@ -61,8 +61,7 @@ test {
 test {
     my $c = shift;
 
-    local $Dongry::Database::Registry = {};
-    GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+    my $reg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
     my $temp_d = dir(tempdir(CLEANUP => 1));
     my $temp2_d = dir(tempdir(CLEANUP => 1));
@@ -74,9 +73,11 @@ test {
         'master',
         $rev,
     );
+    $job_action->db_registry($reg);
     $job_action->insert_job('make', {rule => 'hoge'});
 
     my $process_action = GW::Action::ProcessJobs->new;
+    $process_action->db_registry($reg);
     $process_action->process_jobs_as_cv->cb(sub {
         test {
             is scalar $temp2_d->file('foo.txt')->slurp, "1234\n";
@@ -88,8 +89,7 @@ test {
 test {
     my $c = shift;
 
-    local $Dongry::Database::Registry = {};
-    GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+    my $reg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
     my $temp2_d = dir(tempdir(CLEANUP => 1));
     for my $i (1..2) {
@@ -102,10 +102,12 @@ test {
             'master',
             $rev,
         );
+        $job_action->db_registry($reg);
         $job_action->insert_job('make', {rule => 'hoge'});
     }
 
     my $process_action = GW::Action::ProcessJobs->new;
+    $process_action->db_registry($reg);
     $process_action->process_jobs_as_cv->cb(sub {
         test {
             is scalar $temp2_d->file('foo-1.txt')->slurp, "1234-1\n";
