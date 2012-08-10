@@ -18,6 +18,13 @@ sub timeout {
     return 10*60;
 }
 
+sub onmessage {
+    if (@_ > 1) {
+        $_[0]->{onmessage} = $_[1];
+    }
+    return $_[0]->{onmessage};
+}
+
 sub get_jobs {
     my $self = shift;
 
@@ -71,6 +78,7 @@ sub process_jobs_as_cv {
     $self->get_jobs->each(sub {
         my $job = $_;
         my $repo_action = GW::Action::ProcessRepository->new_from_job($job);
+        $repo_action->onmessage($self->onmessage);
         $cv->begin;
         $repo_action->run_action_as_cv->cb(sub {
             $self->delete_job($job->{job_id});
