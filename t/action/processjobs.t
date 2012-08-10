@@ -5,37 +5,30 @@ BEGIN {
 }
 use warnings;
 use Test::GW;
-use Test::X1;
-use Test::More;
-use Test::Differences;
-use Test::AnyEvent::MySQL::CreateDatabase;
-use GW::Action::InsertJob;
-use GW::Action::ProcessJobs;
 use Path::Class;
 use File::Temp qw(tempdir);
-
-my $root_d = file(__FILE__)->dir->parent->parent;
-my $prep_f = $root_d->file('db', 'preparation.txt');
-my $mysql_cv = Test::AnyEvent::MySQL::CreateDatabase->prep_f_to_cv($prep_f);
+use GW::MySQL;
+use GW::Action::InsertJob;
+use GW::Action::ProcessJobs;
 
 test {
     my $c = shift;
 
     local $Dongry::Database::Registry = {};
-    GW::MySQL->load_by_f($c->received_data->json_f);
+    GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
     my $action = GW::Action::ProcessJobs->new;
     my $jobs = $action->get_jobs;
     is $jobs->length, 0;
 
     done $c;
-} n => 1, wait => $mysql_cv;
+} n => 1, wait => mysql_as_cv;
 
 test {
     my $c = shift;
 
     local $Dongry::Database::Registry = {};
-    GW::MySQL->load_by_f($c->received_data->json_f);
+    GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
     my $url = q<git://hoge/fuga> . rand;
     my $branch = q<devel/hoge>;
@@ -63,13 +56,13 @@ test {
     is $action->get_jobs->length, 0;
     
     $c->done;
-} n => 4, wait => $mysql_cv;
+} n => 4, wait => mysql_as_cv;
 
 test {
     my $c = shift;
 
     local $Dongry::Database::Registry = {};
-    GW::MySQL->load_by_f($c->received_data->json_f);
+    GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
     my $temp_d = dir(tempdir(CLEANUP => 1));
     my $temp2_d = dir(tempdir(CLEANUP => 1));
@@ -90,13 +83,13 @@ test {
             done $c;
         } $c;
     });
-} n => 1, wait => $mysql_cv, name => 'process_jobs a job';
+} n => 1, wait => mysql_as_cv, name => 'process_jobs a job';
 
 test {
     my $c = shift;
 
     local $Dongry::Database::Registry = {};
-    GW::MySQL->load_by_f($c->received_data->json_f);
+    GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
     my $temp2_d = dir(tempdir(CLEANUP => 1));
     for my $i (1..2) {
@@ -120,6 +113,6 @@ test {
             done $c;
         } $c;
     });
-} n => 2, wait => $mysql_cv, name => 'process_jobs multiple job';
+} n => 2, wait => mysql_as_cv, name => 'process_jobs multiple job';
 
 run_tests;

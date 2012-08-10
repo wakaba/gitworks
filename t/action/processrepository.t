@@ -5,8 +5,6 @@ BEGIN {
 }
 use warnings;
 use Test::GW;
-use Test::X1;
-use Test::More;
 use File::Temp qw(tempdir);
 use Path::Class;
 use GW::Action::ProcessRepository;

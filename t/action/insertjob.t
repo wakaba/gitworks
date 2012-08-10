@@ -5,13 +5,16 @@ BEGIN {
 }
 use warnings;
 use Test::GW;
-use Test::X1;
-use Test::More;
-use Test::Differences;
 use GW::Action::InsertJob;
+use GW::MySQL;
+
+my $mysql_cv = mysql_as_cv;
 
 test {
     my $c = shift;
+
+    local *Dongry::Database::Registry = {};
+    GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
     my $url = q<git://hoge/fuga> . rand;
     my $branch = q<devel/hoge>;
@@ -29,6 +32,6 @@ test {
     eq_or_diff $row->get('args'), {12 => 31};
     
     $c->done;
-} n => 6;
+} n => 6, wait => $mysql_cv;
 
 run_tests;

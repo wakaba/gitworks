@@ -5,39 +5,15 @@ BEGIN {
 }
 use warnings;
 use Test::GW::Web;
-use Test::X1;
-use Test::More;
-use Test::Differences;
-use Web::UserAgent::Functions qw(http_get http_post http_post_data);
-use JSON::Functions::XS qw(perl2json_bytes);
-use Path::Class;
-use Test::AnyEvent::MySQL::CreateDatabase;
 use GW::Action::ProcessJobs;
+use GW::MySQL;
 
-my $root_d = file(__FILE__)->dir->parent->parent;
-my $prep_f = $root_d->file('db', 'preparation.txt');
-
-sub get_cv () {
-    my $mysql_cv = Test::AnyEvent::MySQL::CreateDatabase->prep_f_to_cv($prep_f);
-    
-    my $server = start_web_server;
-    
-    my $cv = AE::cv;
-    $cv->begin(sub { $_[0]->send($server) });
-    $cv->begin;
-    $mysql_cv->cb(sub { $cv->end });
-    $cv->begin;
-    $server->start_cv->cb(sub { $cv->end });
-    $cv->end;
-    return $cv;
-}
-
-my $cv = get_cv;
+my $cv1 = mysql_and_web_as_cv;
 
 test {
     my $c = shift;
 
-    my $host = $c->received_data->host;
+    my $host = $c->received_data->web_host;
     http_get
         url => qq<http://$host/hook>,
         anyevent => 1,
@@ -48,12 +24,12 @@ test {
                 done $c;
             } $c;
         };
-} n => 1, wait => $cv;
+} name => 'get', n => 1, wait => $cv1;
 
 test {
     my $c = shift;
 
-    my $host = $c->received_data->host;
+    my $host = $c->received_data->web_host;
     http_post
         url => qq<http://$host/hook>,
         anyevent => 1,
@@ -64,12 +40,12 @@ test {
                 done $c;
             } $c;
         };
-} n => 1, wait => $cv;
+} name => 'post no args', n => 1, wait => $cv1;
 
 test {
     my $c = shift;
 
-    my $host = $c->received_data->host;
+    my $host = $c->received_data->web_host;
     http_post_data
         url => qq<http://$host/hook>,
         content => perl2json_bytes {
@@ -87,6 +63,9 @@ test {
             test {
                 is $res->code, 202;
 
+                local *Dongry::Database::Registry = {};
+                GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+
                 my $action = GW::Action::ProcessJobs->new;
                 my $jobs = $action->get_jobs;
                 is $jobs->length, 1;
@@ -103,6 +82,6 @@ test {
                 done $c;
             } $c;
         };
-} n => 4, wait => get_cv;
+} n => 4, wait => mysql_and_web_as_cv;
 
 run_tests;

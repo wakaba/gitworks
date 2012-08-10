@@ -35,18 +35,10 @@ PREPARE_DB_SET_PL = modules/rdb-utils/bin/prepare-db-set.pl
 DB_SET_JSON = t/tmp/dsns.json
 PROVE = prove
 
-test: test-deps testdb-start safetest testdb-stop
+test: test-deps safetest
 
 test-deps: local-submodules pmb-install
 
-testdb-start:
-	mkdir -p t/tmp
-	$(PERL_ENV) $(PERL) $(PREPARE_DB_SET_PL) --dsn-list $(DB_SET_JSON) \
-            --preparation-file-name db/preparation.txt
-
-testdb-stop:
-	$(PERL_ENV) $(PERL) $(PREPARE_DB_SET_PL) --dsn-list $(DB_SET_JSON) --stop
-
 safetest:
-	$(PERL_ENV) $(PROVE) t/action/*.t
+	$(PERL_ENV) $(PROVE) t/action/*.t t/web/*.t
 

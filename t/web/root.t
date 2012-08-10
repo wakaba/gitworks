@@ -4,17 +4,12 @@ BEGIN {
     $dir_name .= '/../lib'; unshift @INC, $dir_name;
 }
 use warnings;
-use Test::GW::Web;
-use Test::X1;
-use Test::More;
-use Web::UserAgent::Functions qw(http_get);
-
-my $server = start_web_server;
+use Test::GW;
 
 test {
     my $c = shift;
 
-    my $host = $c->received_data->host;
+    my $host = $c->received_data->web_host;
     http_get
         url => qq<http://$host/>,
         anyevent => 1,
@@ -25,6 +20,6 @@ test {
                 done $c;
             } $c;
         };
-} n => 1, wait => $server->start_cv;
+} n => 1, wait => mysql_and_web_as_cv;
 
 run_tests;
