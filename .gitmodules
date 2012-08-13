@@ -25,3 +25,6 @@
 [submodule "modules/charclass"]
 	path = modules/charclass
 	url = git://github.com/wakaba/perl-charclass
+[submodule "modules/workaholicd"]
+	path = modules/workaholicd
+	url = git://github.com/wakaba/workaholicd
