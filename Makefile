@@ -41,3 +41,25 @@ test-deps: local-submodules pmb-install
 
 test-main:
 	$(PERL_ENV) $(PROVE) t/action/*.t t/web/*.t
+
+# ------ Local (example) ------
+
+LOCAL_SERVER_ARGS = \
+	    APP_NAME=gitworks \
+	    SERVER_INSTANCE_NAME=gwlocal \
+	    SERVER_PORT=6016 \
+	    SERVER_ENV=default \
+	    ROOT_DIR="$(abspath .)" \
+	    SERVICE_DIR="/etc/service"
+
+local-server:
+	$(MAKE) --makefile=Makefile.service all $(LOCAL_SERVER_ARGS) \
+	    SERVER_TYPE=web SERVER_TYPE_LOG=web
+	$(MAKE) --makefile=Makefile.service all $(LOCAL_SERVER_ARGS) \
+	    SERVER_TYPE=workaholicd SERVER_TYPE_LOG=workaholicd
+
+install-local-server:
+	$(MAKE) --makefile=Makefile.service install $(LOCAL_SERVER_ARGS) \
+	    SERVER_TYPE=web SERVER_TYPE_LOG=web
+	$(MAKE) --makefile=Makefile.service install $(LOCAL_SERVER_ARGS) \
+	    SERVER_TYPE=workaholicd SERVER_TYPE_LOG=workaholicd
