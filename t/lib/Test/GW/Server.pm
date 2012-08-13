@@ -3,14 +3,15 @@ use strict;
 use warnings;
 use Path::Class;
 use AnyEvent;
+use AnyEvent::Util;
 use MIME::Base64 qw(encode_base64);
 use Scalar::Util qw(weaken);
-use File::Temp qw(tempfile);
+use File::Temp;
 use Test::AnyEvent::MySQL::CreateDatabase;
 use Test::AnyEvent::plackup;
 
 sub new {
-    return bless {}, $_[0];
+    return bless {workaholicd_boot_cv => AE::cv}, $_[0];
 }
 
 sub root_d {
@@ -66,10 +67,12 @@ sub psgi_f {
 sub api_key_f {
     my $self = shift;
     return $self->{api_key_f} ||= do {
-        my ($fh, $filename) = tempfile;
+        $self->{api_key_file_temp} = File::Temp->new;
+        my $f = file($self->{api_key_file_temp}->filename);
+        my $fh = $f->openw;
         print $fh encode_base64 'testapikey';
         close $fh;
-        file($filename);
+        $f;
     };
 }
 
@@ -109,6 +112,7 @@ sub start_mysql_and_web_servers_as_cv {
     $self->{mysql_cv}->cb(sub {
         $self->{mysql_context} = $_[0]->recv;
         $self->_start_web_server;
+        $self->{workaholicd_boot_cv}->send;
         $self->{web_start_cv}->cb(sub {
             $cv->end;
         });
@@ -118,7 +122,57 @@ sub start_mysql_and_web_servers_as_cv {
     return $cv;
 }
 
+# ------ Workaholicd ------
+
+sub workaholicd_f {
+    my $self = shift;
+    return $self->{workaholicd_f} ||= $self->root_d->file('bin', 'workaholicd.pl');
+}
+
+sub workaholicd_conf_f {
+    my $self = shift;
+    return $self->{workaholicd_conf_f} ||= $self->root_d->file('config', 'workaholicd.pl');
+}
+
+sub start_workaholicd_as_cv {
+    weaken(my $self = shift);
+    my $cv = AE::cv;
+    $self->{workaholicd_boot_cv}->cb(sub {
+        local $ENV{GW_DSNS_JSON} = $self->dsns_json_f;
+        local $ENV{GW_API_KEY_FILE_NAME} = $self->api_key_f;
+        local $ENV{GW_WEB_HOSTNAME} = $self->web_hostname;
+        local $ENV{GW_WEB_PORT} = $self->web_port;
+        
+        my $pid;
+        $self->{workaholicd_cv} = run_cmd
+            [
+                'perl',
+                $self->workaholicd_f->stringify, 
+                $self->workaholicd_conf_f->stringify,
+            ],
+            '$$' => \$pid;
+        $self->{workaholicd_stop_cv} = AE::cv;
+        $self->{workaholicd_cv}->cb(sub {
+            if (my $return = $_[0]->recv >> 8) {
+                die "Can't start workaholicd: " . $return;
+            }
+            $self->{workaholicd_stop_cv}->send;
+        });
+        $self->{workaholicd_pid} = $pid;
+    });
+    $cv->send;
+    return $cv;
+}
+
 # ------ Contextial ------
+
+sub web_hostname {
+    return 'localhost';
+}
+
+sub web_port {
+    return $_[0]->{web_server}->port;
+}
 
 sub web_host {
     return 'localhost:' . $_[0]->{web_server}->port;
@@ -143,14 +197,27 @@ sub context_end {
         }
         undef $self;
     };
-    if ($self->{rc}--) {
+    if ($self->{rc}-- > 0) {
         $cb2->();
     } else {
+        if ($self->{workaholicd_pid}) {
+            kill 15, $self->{workaholicd_pid};
+        }
         $self->{web_stop_cv}->cb(sub {
             $cb2->();
-        });
-        $self->{web_server}->stop_server;
+        }) if $self->{web_stop_cv};
+        if ($self->{workaholicd_stop_cv}) {
+            $self->{workaholicd_stop_cv}->cb(sub {
+                $self->{web_server}->stop_server if $self->{web_server};
+            });
+        } else {
+            $self->{web_server}->stop_server if $self->{web_server};
+        }
     }
+}
+
+sub DESTROY {
+    $_[0]->context_end;
 }
 
 1;

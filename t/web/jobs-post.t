@@ -4,7 +4,7 @@ BEGIN {
     $dir_name .= '/../lib'; unshift @INC, $dir_name;
 }
 use warnings;
-use Test::GW::Web;
+use Test::GW;
 use AnyEvent;
 use Path::Class;
 use File::Temp qw(tempdir);
@@ -108,5 +108,63 @@ test {
         } $c;
     });
 } n => 4, wait => mysql_and_web_as_cv;
+
+test {
+    my $c = shift;
+
+    my $host = $c->received_data->web_host;
+    my $reg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+
+    my $temp_d = dir(tempdir(CLEANUP => 1));
+    my $temp2_d = dir(tempdir(CLEANUP => 1));
+    system "cd $temp_d && git init && echo 'hoge:\n\techo 1234 > @{[$temp2_d]}/foo.txt' > Makefile && git add Makefile && git commit -m New";
+    my $rev = `cd $temp_d && git rev-parse HEAD`;
+
+    my $cv1 = AE::cv;
+    http_post
+        url => qq<http://$host/hook>,
+        basic_auth => [api_key => 'testapikey'],
+        content => perl2json_bytes {
+            repository => {url => $temp_d->stringify},
+            refname => 'refs/heads/master',
+            after => $rev,
+            hook_args => {
+                action_type => 'make',
+                action_args => {rule => 'hoge'},
+            },
+        },
+        anyevent => 1,
+        cb => sub {
+            my ($req, $res) = @_;
+            test {
+                is $res->code, 202;
+                $cv1->send;
+            } $c;
+        };
+
+    my $cv2 = AE::cv;
+    $cv1->cb(sub {
+        my $timer; $timer = AE::timer 7, 0, sub {
+            test {
+                undef $timer;
+                $cv2->send;
+            } $c;
+        };
+    });
+
+    $cv2->cb(sub {
+        test {
+            is scalar $temp2_d->file('foo.txt')->slurp, "1234\n";
+
+            my $action = GW::Action::ProcessJobs->new;
+            $action->db_registry($reg);
+            my $jobs = $action->get_jobs;
+            is $jobs->length, 0;
+
+            done $c;
+        } $c;
+    });
+} n => 3, wait => mysql_and_web_and_workaholicd_as_cv,
+    name => 'by workaholicd';
 
 run_tests;

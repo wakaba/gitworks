@@ -12,6 +12,7 @@ use Test::GW::Server;
 use Test::More;
 use Test::Differences;
 use Test::X1;
+use AnyEvent;
 use Web::UserAgent::Functions qw(http_get http_post http_post_data);
 use JSON::Functions::XS qw(perl2json_bytes);
 
@@ -35,6 +36,21 @@ sub mysql_and_web_as_cv () {
     my $server = Test::GW::Server->new;
     push @$Servers, $server;
     return $server->start_mysql_and_web_servers_as_cv;
+}
+
+push @EXPORT, qw(mysql_and_web_and_workaholicd_as_cv);
+sub mysql_and_web_and_workaholicd_as_cv () {
+    my $server = Test::GW::Server->new;
+    push @$Servers, $server;
+    my $cv = AE::cv;
+    my $ctx;
+    $cv->begin(sub { $_[0]->send($ctx) });
+    $cv->begin;
+    $server->start_workaholicd_as_cv->cb(sub { $cv->end });
+    $cv->begin;
+    $server->start_mysql_and_web_servers_as_cv->cb(sub { $ctx = $_[0]->recv; $cv->end });
+    $cv->end;
+    return $cv;
 }
 
 1;
