@@ -50,6 +50,8 @@ sub process {
         $app->http->close_response_body;
         return $app->throw;
     } elsif ($path->[0] eq 'jobs') {
+        $app->requires_request_method ({POST => 1});
+
         my $http = $app->http;
         require GW::Action::ProcessJobs;
         my $action = GW::Action::ProcessJobs->new;
