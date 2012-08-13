@@ -22,26 +22,25 @@ our @EXPORT = (
     qw(http_get http_post http_post_data perl2json_bytes),
 );
 
-my $Servers = [];
-
 push @EXPORT, qw(mysql_as_cv);
 sub mysql_as_cv () {
     my $server = Test::GW::Server->new;
-    push @$Servers, $server;
-    return $server->start_mysql_server_as_cv;
+    my $cv = $server->start_mysql_server_as_cv;
+    $cv->{_test_server} = $server;
+    return $cv;
 }
 
 push @EXPORT, qw(mysql_and_web_as_cv);
 sub mysql_and_web_as_cv () {
     my $server = Test::GW::Server->new;
-    push @$Servers, $server;
-    return $server->start_mysql_and_web_servers_as_cv;
+    my $cv = $server->start_mysql_and_web_servers_as_cv;
+    $cv->{_test_server} = $server;
+    return $cv;
 }
 
 push @EXPORT, qw(mysql_and_web_and_workaholicd_as_cv);
 sub mysql_and_web_and_workaholicd_as_cv () {
     my $server = Test::GW::Server->new;
-    push @$Servers, $server;
     my $cv = AE::cv;
     my $ctx;
     $cv->begin(sub { $_[0]->send($ctx) });
@@ -50,6 +49,7 @@ sub mysql_and_web_and_workaholicd_as_cv () {
     $cv->begin;
     $server->start_mysql_and_web_servers_as_cv->cb(sub { $ctx = $_[0]->recv; $cv->end });
     $cv->end;
+    $cv->{_test_server} = $server;
     return $cv;
 }
 

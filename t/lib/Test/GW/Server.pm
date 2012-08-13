@@ -77,11 +77,11 @@ sub api_key_f {
 }
 
 sub _start_web_server {
-    weaken(my $self = shift);
+    my $self = shift;
 
     local $ENV{GW_DSNS_JSON} = $self->dsns_json_f;
     local $ENV{GW_API_KEY_FILE_NAME} = $self->api_key_f;
-    
+
     $self->{web_server} = my $server = Test::AnyEvent::plackup->new;
     $server->app($self->psgi_f);
     $server->server('Twiggy');
@@ -103,7 +103,7 @@ sub _start_web_server {
 
 sub start_mysql_and_web_servers_as_cv {
     weaken(my $self = shift);
-    
+
     $self->_start_mysql_server;
 
     my $cv = AE::cv;
@@ -197,11 +197,11 @@ sub context_end {
         }
         undef $self;
     };
-    if ($self->{rc}-- > 0) {
+    if (--$self->{rc} > 0) {
         $cb2->();
     } else {
         if ($self->{workaholicd_pid}) {
-            kill 15, $self->{workaholicd_pid};
+            kill 15, $self->{workaholicd_pid}; # SIGTERM
         }
         $self->{web_stop_cv}->cb(sub {
             $cb2->();
@@ -217,6 +217,13 @@ sub context_end {
 }
 
 sub DESTROY {
+    {
+        local $@;
+        eval { die };
+        if ($@ =~ /during global destruction/) {
+            warn "Detected (possibly) memory leak";
+        }
+    }
     $_[0]->context_end;
 }
 
