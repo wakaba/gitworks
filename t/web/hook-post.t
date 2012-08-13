@@ -4,7 +4,7 @@ BEGIN {
     $dir_name .= '/../lib'; unshift @INC, $dir_name;
 }
 use warnings;
-use Test::GW::Web;
+use Test::GW;
 use GW::Action::ProcessJobs;
 use GW::MySQL;
 
