@@ -203,9 +203,13 @@ sub context_end {
         if ($self->{workaholicd_pid}) {
             kill 15, $self->{workaholicd_pid}; # SIGTERM
         }
-        $self->{web_stop_cv}->cb(sub {
+        if ($self->{web_stop_cv}) {
+            $self->{web_stop_cv}->cb(sub {
+                $cb2->();
+            });
+        } else {
             $cb2->();
-        }) if $self->{web_stop_cv};
+        }
         if ($self->{workaholicd_stop_cv}) {
             $self->{workaholicd_stop_cv}->cb(sub {
                 $self->{web_server}->stop_server if $self->{web_server};
