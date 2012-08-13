@@ -2,7 +2,18 @@ package GW::Web;
 use strict;
 use warnings;
 use Wanage::HTTP;
+use Path::Class;
+use Encode;
+use MIME::Base64 qw(decode_base64);
 use GW::Warabe::App;
+
+our $APIKey;
+
+sub load_api_key_by_env {
+    my $file_name = $ENV{GW_API_KEY_FILE_NAME}
+        or die "|GW_API_KEY_FILE_NAME| not specified";
+    $APIKey = decode 'utf-8', decode_base64 scalar file($file_name)->slurp;
+}
 
 sub psgi_app {
     my $reg = $_[1];
@@ -23,7 +34,8 @@ sub process {
 
     my $path = $app->path_segments;
     if ($path->[0] eq 'hook') {
-        $app->requires_request_method ({POST => 1});
+        $app->requires_request_method({POST => 1});
+        $app->requires_basic_auth({api_key => $APIKey});
 
         my $json = $app->request_json;
         my $branch = $json->{refname} || '';
@@ -51,6 +63,7 @@ sub process {
         return $app->throw;
     } elsif ($path->[0] eq 'jobs') {
         $app->requires_request_method ({POST => 1});
+        $app->requires_basic_auth({api_key => $APIKey});
 
         my $http = $app->http;
         require GW::Action::ProcessJobs;

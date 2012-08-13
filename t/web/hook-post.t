@@ -36,6 +36,23 @@ test {
         cb => sub {
             my ($req, $res) = @_;
             test {
+                is $res->code, 401;
+                done $c;
+            } $c;
+        };
+} name => 'post no args, no api key', n => 1, wait => $cv1;
+
+test {
+    my $c = shift;
+
+    my $host = $c->received_data->web_host;
+    http_post
+        url => qq<http://$host/hook>,
+        basic_auth => [api_key => 'testapikey'],
+        anyevent => 1,
+        cb => sub {
+            my ($req, $res) = @_;
+            test {
                 is $res->code, 400;
                 done $c;
             } $c;
@@ -50,6 +67,7 @@ test {
 
     http_post_data
         url => qq<http://$host/hook>,
+        basic_auth => [api_key => 'testapikey'],
         content => perl2json_bytes {
             repository => {url => q{git://hoge/fuga}},
             refname => 'refs/heads/hogefugabranch',

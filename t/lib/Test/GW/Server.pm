@@ -3,7 +3,9 @@ use strict;
 use warnings;
 use Path::Class;
 use AnyEvent;
+use MIME::Base64 qw(encode_base64);
 use Scalar::Util qw(weaken);
+use File::Temp qw(tempfile);
 use Test::AnyEvent::MySQL::CreateDatabase;
 use Test::AnyEvent::plackup;
 
@@ -61,10 +63,21 @@ sub psgi_f {
     return $self->{psgi_f} ||= $self->root_d->file('bin', 'server.psgi');
 }
 
+sub api_key_f {
+    my $self = shift;
+    return $self->{api_key_f} ||= do {
+        my ($fh, $filename) = tempfile;
+        print $fh encode_base64 'testapikey';
+        close $fh;
+        file($filename);
+    };
+}
+
 sub _start_web_server {
     weaken(my $self = shift);
 
     local $ENV{GW_DSNS_JSON} = $self->dsns_json_f;
+    local $ENV{GW_API_KEY_FILE_NAME} = $self->api_key_f;
     
     $self->{web_server} = my $server = Test::AnyEvent::plackup->new;
     $server->app($self->psgi_f);

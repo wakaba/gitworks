@@ -33,6 +33,22 @@ test {
     my $c = shift;
 
     my $host = $c->received_data->web_host;
+    http_post
+        url => qq<http://$host/jobs>,
+        anyevent => 1,
+        cb => sub {
+            my ($req, $res) = @_;
+            test {
+                is $res->code, 401;
+                done $c;
+            } $c;
+        };
+} name => 'post no apikey', n => 1, wait => $cv1;
+
+test {
+    my $c = shift;
+
+    my $host = $c->received_data->web_host;
     my $reg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
     my $temp_d = dir(tempdir(CLEANUP => 1));
@@ -41,8 +57,9 @@ test {
     my $rev = `cd $temp_d && git rev-parse HEAD`;
 
     my $cv1 = AE::cv;
-    http_post_data
+    http_post
         url => qq<http://$host/hook>,
+        basic_auth => [api_key => 'testapikey'],
         content => perl2json_bytes {
             repository => {url => $temp_d->stringify},
             refname => 'refs/heads/master',
@@ -66,6 +83,7 @@ test {
         test {
             http_post_data
                 url => qq<http://$host/jobs>,
+                basic_auth => [api_key => 'testapikey'],
                 anyevent => 1,
                 cb => sub {
                     my ($req, $res) = @_;
