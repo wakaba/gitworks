@@ -20,13 +20,15 @@ Makefile.setupenv:
 
 lperl lplackup lprove local-perl perl-version perl-exec \
 pmb-install pmb-update local-submodules \
-: %: Makefile-setupenv
+cinnamon: %: Makefile-setupenv
 	$(MAKE) --makefile Makefile.setupenv $@ \
 	    PMB_PMTAR_REPO_URL=$(PMB_PMTAR_REPO_URL) \
 	    PMB_PMPP_REPO_URL=$(PMB_PMPP_REPO_URL)
 
 git-submodules:
 	$(GIT) submodule update --init
+
+deps: local-submodules pmb-install
 
 # ------ Tests ------
 
@@ -37,7 +39,7 @@ PROVE = prove
 
 test: test-deps test-main
 
-test-deps: local-submodules pmb-install
+test-deps: deps
 
 test-main:
 	$(PERL_ENV) $(PROVE) t/action/*.t t/web/*.t
