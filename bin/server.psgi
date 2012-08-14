@@ -11,6 +11,11 @@ BEGIN {
 use warnings;
 use GW::MySQL;
 use GW::Web;
+use Path::Class;
+
+if ($ENV{GW_COMMAND_DIR_NAME}) {
+    $GW::CommandDirD = dir($ENV{GW_COMMAND_DIR_D});
+}
 
 my $reg = GW::MySQL->load_by_env;
 GW::Web->load_api_key_by_env;

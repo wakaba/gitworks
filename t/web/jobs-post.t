@@ -62,7 +62,7 @@ test {
         basic_auth => [api_key => 'testapikey'],
         content => perl2json_bytes {
             repository => {url => $temp_d->stringify},
-            refname => 'refs/heads/master',
+            ref => 'refs/heads/master',
             after => $rev,
             hook_args => {
                 action_type => 'make',
@@ -126,7 +126,7 @@ test {
         basic_auth => [api_key => 'testapikey'],
         content => perl2json_bytes {
             repository => {url => $temp_d->stringify},
-            refname => 'refs/heads/master',
+            ref => 'refs/heads/master',
             after => $rev,
             hook_args => {
                 action_type => 'make',

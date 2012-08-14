@@ -88,6 +88,18 @@ sub clone_as_cv {
     return $cv;
 }
 
+sub command_dir_d {
+    if (@_ > 1) {
+        $_[0]->{command_dir_d} = $_[1];
+    }
+    return $_[0]->{command_dir_d} || $GW::CommandDirD || dir('commanddirnotspecified');
+}
+
+sub get_command_f {
+    my ($self, $command) = @_;
+    return $self->command_dir_d->file($command . '.sh');
+}
+
 sub run_action_as_cv {
     my $self = shift;
     my $action = $self->{job}->{action_type};
@@ -99,6 +111,17 @@ sub run_action_as_cv {
             my $run_cv = run_cmd
                 "cd @{[quotemeta $self->temp_repo_d]} && (make @{[quotemeta $args->{rule}]})";
             $run_cv->cb(sub { $cv->send });
+        } elsif ($action eq 'command') {
+            my $command = $args->{command};
+            if ($command =~ /\A[0-9A-Za-z_]+\z/ and
+                -f (my $command_f = $self->get_command_f($command))) {
+                my $run_cv = run_cmd
+                    "cd @{[quotemeta $self->temp_repo_d]} && sh @{[$command_f->absolute]}";
+                $run_cv->cb(sub { $cv->send });
+            } else {
+                warn "Command |$command| is not defined";
+                $cv->send;
+            }
         } else {
             warn "Action |$action| is not supported";
             $cv->send;

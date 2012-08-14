@@ -70,7 +70,7 @@ test {
         basic_auth => [api_key => 'testapikey'],
         content => perl2json_bytes {
             repository => {url => q{git://hoge/fuga}},
-            refname => 'refs/heads/hogefugabranch',
+            ref => 'refs/heads/hogefugabranch',
             after => '521451abacee',
             hook_args => {
                 action_type => '14242',
