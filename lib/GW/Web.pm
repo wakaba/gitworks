@@ -38,7 +38,7 @@ sub process {
         $app->requires_basic_auth({api_key => $APIKey});
 
         my $json = $app->request_json;
-        my $branch = $json->{refname} || '';
+        my $branch = $json->{ref} || '';
         $branch =~ s{^refs/heads/}{};
 
         require GW::Action::InsertJob;
@@ -46,7 +46,7 @@ sub process {
             $json->{repository}->{url}
                 || $app->throw_error(400, reason_phrase => 'bad repository.url'),
             $branch
-                || $app->throw_error(400, reason_phrase => 'bad refname'),
+                || $app->throw_error(400, reason_phrase => 'bad ref'),
             $json->{after}
                 || $app->throw_error(400, reason_phrase => 'bad after'),
         );
