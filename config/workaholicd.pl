@@ -31,7 +31,7 @@ my @task = (
             table_name => 'job',,
             sql => 'SELECT id FROM :table_name:id WHERE process_started < ? LIMIT 1',
             get_sql_args => sub {
-                return {process_started => time};
+                return {process_started => time - 10 * 60};
             },
             url => $url,
             basic_auth => [api_key => $api_key],
