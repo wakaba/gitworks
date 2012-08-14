@@ -14,7 +14,7 @@ use GW::Web;
 use Path::Class;
 
 if ($ENV{GW_COMMAND_DIR_NAME}) {
-    $GW::CommandDirD = dir($ENV{GW_COMMAND_DIR_D});
+    $GW::CommandDirD = dir($ENV{GW_COMMAND_DIR_NAME});
 }
 
 my $reg = GW::MySQL->load_by_env;
