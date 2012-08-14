@@ -119,7 +119,7 @@ sub run_action_as_cv {
                     "cd @{[quotemeta $self->temp_repo_d]} && sh @{[$command_f->absolute]}";
                 $run_cv->cb(sub { $cv->send });
             } else {
-                warn "Command |$command| is not defined";
+                warn "Command |$command| (@{[$self->get_command_f($command)]}) is not defined";
                 $cv->send;
             }
         } else {
