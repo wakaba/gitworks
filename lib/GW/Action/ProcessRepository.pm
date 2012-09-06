@@ -117,7 +117,13 @@ sub run_action_as_cv {
                 -f (my $command_f = $self->get_command_f($command))) {
                 my $run_cv = run_cmd
                     "cd @{[quotemeta $self->temp_repo_d]} && sh @{[$command_f->absolute]}";
-                $run_cv->cb(sub { $cv->send });
+                $run_cv->cb(sub {
+                    my $return = $_[0]->recv;
+                    if ($return >> 8) {
+                        warn "@{[$command_f->absolute]} exited with status @{[$return >> 8]}\n";
+                    }
+                    $cv->send;
+                });
             } else {
                 warn "Command |$command| (@{[$self->get_command_f($command)]}) is not defined";
                 $cv->send;
