@@ -42,7 +42,7 @@ test: test-deps test-main
 test-deps: deps
 
 test-main:
-	$(PERL_ENV) $(PROVE) t/action/*.t t/web/*.t
+	$(PERL_ENV) $(PROVE) t/action/*.t t/web/*.t t/commands/*.t
 
 # ------ Local (example) ------
 
