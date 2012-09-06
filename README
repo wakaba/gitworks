@@ -1,0 +1,13 @@
+gitworks
+~~~~~~~~
+
+gitworks is a daemon with Web APIs performing predefined actions to
+Git repositories.
+
+* Usage
+
+TBD
+
+* Author
+
+Wakaba <wakabatan@hatena.ne.jp>.
