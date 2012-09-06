@@ -1,5 +1,3 @@
-git://github.com/wakaba/perl-net-tcp-findport
 git://github.com/wakaba/perl-test-x1
 git://github.com/wakaba/perl-test-anyevent-plackup
 git://github.com/wakaba/perl-web-useragent-functions
-git://github.com/wakaba/perl-Parse-Netstat
