@@ -16,7 +16,8 @@ test {
 
     my $reg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
-    my $action = GW::Action::ProcessJobs->new;
+    my $cached_d = dir(tempdir(CLEANUP => 1));
+    my $action = GW::Action::ProcessJobs->new_from_cached_repo_set_d($cached_d);
     $action->db_registry($reg);
     my $jobs = $action->get_jobs;
     is $jobs->length, 0;
@@ -36,7 +37,8 @@ test {
     $act->db_registry($reg);
     $act->insert_job('testaction1', {12 => 31});
 
-    my $action = GW::Action::ProcessJobs->new;
+    my $cached_d = dir(tempdir(CLEANUP => 1));
+    my $action = GW::Action::ProcessJobs->new_from_cached_repo_set_d($cached_d);
     $action->db_registry($reg);
     my $jobs = $action->get_jobs;
     is $jobs->length, 1;
@@ -76,7 +78,8 @@ test {
     $job_action->db_registry($reg);
     $job_action->insert_job('make', {rule => 'hoge'});
 
-    my $process_action = GW::Action::ProcessJobs->new;
+    my $cached_d = dir(tempdir(CLEANUP => 1));
+    my $process_action = GW::Action::ProcessJobs->new_from_cached_repo_set_d($cached_d);
     $process_action->db_registry($reg);
     $process_action->process_jobs_as_cv->cb(sub {
         test {
@@ -106,7 +109,8 @@ test {
         $job_action->insert_job('make', {rule => 'hoge'});
     }
 
-    my $process_action = GW::Action::ProcessJobs->new;
+    my $cached_d = dir(tempdir(CLEANUP => 1));
+    my $process_action = GW::Action::ProcessJobs->new_from_cached_repo_set_d($cached_d);
     $process_action->db_registry($reg);
     $process_action->process_jobs_as_cv->cb(sub {
         test {

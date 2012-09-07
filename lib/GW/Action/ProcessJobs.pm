@@ -6,8 +6,12 @@ use Dongry::Database;
 use GW::MySQL;
 use GW::Action::ProcessRepository;
 
-sub new {
-    return bless {}, $_[0];
+sub new_from_cached_repo_set_d {
+    return bless {cached_repo_set_d => $_[1]}, $_[0];
+}
+
+sub cached_repo_set_d {
+    return $_[0]->{cached_repo_set_d};
 }
 
 sub job_count {
@@ -81,9 +85,10 @@ sub process_jobs_as_cv {
     my $cv = AE::cv;
     $cv->begin(sub { $_[0]->send });
 
+    my $cached_d = $self->cached_repo_set_d;
     $self->get_jobs->each(sub {
         my $job = $_;
-        my $repo_action = GW::Action::ProcessRepository->new_from_job($job);
+        my $repo_action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
         $repo_action->onmessage($self->onmessage);
         $cv->begin;
         $repo_action->run_action_as_cv->cb(sub {

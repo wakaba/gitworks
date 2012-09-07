@@ -11,7 +11,8 @@ use File::Temp qw(tempdir);
 use GW::Action::ProcessJobs;
 use GW::MySQL;
 
-my $cv1 = mysql_and_web_as_cv;
+my $cv1;
+my $default_server = sub { $cv1 ||= mysql_and_web_as_cv };
 
 test {
     my $c = shift;
@@ -27,7 +28,7 @@ test {
                 done $c;
             } $c;
         };
-} name => 'get', n => 1, wait => $cv1;
+} name => 'get', n => 1, wait => $default_server;
 
 test {
     my $c = shift;
@@ -41,9 +42,10 @@ test {
             test {
                 is $res->code, 401;
                 done $c;
+                undef $c;
             } $c;
         };
-} name => 'post no apikey', n => 1, wait => $cv1;
+} name => 'post no apikey', n => 1, wait => $default_server;
 
 test {
     my $c = shift;
@@ -99,15 +101,16 @@ test {
         test {
             is scalar $temp2_d->file('foo.txt')->slurp, "1234\n";
 
-            my $action = GW::Action::ProcessJobs->new;
+            my $action = GW::Action::ProcessJobs->new_from_cached_repo_set_d($c->received_data->cached_repo_set_d);
             $action->db_registry($reg);
             my $jobs = $action->get_jobs;
             is $jobs->length, 0;
 
             done $c;
+            undef $c;
         } $c;
     });
-} n => 4, wait => mysql_and_web_as_cv;
+} n => 4, wait => sub { mysql_and_web_as_cv };
 
 test {
     my $c = shift;
@@ -156,15 +159,16 @@ test {
         test {
             is scalar $temp2_d->file('foo.txt')->slurp, "1234\n";
 
-            my $action = GW::Action::ProcessJobs->new;
+            my $action = GW::Action::ProcessJobs->new_from_cached_repo_set_d($c->received_data->cached_repo_set_d);
             $action->db_registry($reg);
             my $jobs = $action->get_jobs;
             is $jobs->length, 0;
 
             done $c;
+            undef $c;
         } $c;
     });
-} n => 3, wait => mysql_and_web_and_workaholicd_as_cv,
+} n => 3, wait => sub { mysql_and_web_and_workaholicd_as_cv },
     name => 'by workaholicd';
 
 run_tests;

@@ -17,6 +17,8 @@ if ($ENV{GW_COMMAND_DIR_NAME}) {
     $GW::CommandDirD = dir($ENV{GW_COMMAND_DIR_NAME});
 }
 
+my $cached_d = dir($ENV{GW_CACHED_REPO_SET_DIR_NAME} || file(__FILE__)->dir->parent->subdir('local', 'cached-repo-set'));
+
 my $reg = GW::MySQL->load_by_env;
 GW::Web->load_api_key_by_env;
-return GW::Web->psgi_app($reg);
+return GW::Web->psgi_app($reg, $cached_d);

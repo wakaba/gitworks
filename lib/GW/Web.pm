@@ -16,21 +16,21 @@ sub load_api_key_by_env {
 }
 
 sub psgi_app {
-    my $reg = $_[1];
+    my (undef, $reg, $cached_d) = @_;
     return sub {
         my $http = Wanage::HTTP->new_from_psgi_env ($_[0]);
         my $app = GW::Warabe::App->new_from_http ($http);
         
         return $http->send_response(onready => sub {
             $app->execute (sub {
-                GW::Web->process ($app, $reg);
+                GW::Web->process ($app, $reg, $cached_d);
             });
         });
     };
 }
 
 sub process {
-    my ($class, $app, $reg) = @_;
+    my ($class, $app, $reg, $cached_d) = @_;
 
     my $path = $app->path_segments;
     if ($path->[0] eq 'hook') {
@@ -67,7 +67,7 @@ sub process {
 
         my $http = $app->http;
         require GW::Action::ProcessJobs;
-        my $action = GW::Action::ProcessJobs->new;
+        my $action = GW::Action::ProcessJobs->new_from_cached_repo_set_d($cached_d);
         $action->db_registry($reg);
         $action->onmessage(sub {
             my ($msg, %args) = @_;

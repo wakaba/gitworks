@@ -83,7 +83,7 @@ test {
             test {
                 is $res->code, 202;
 
-                my $action = GW::Action::ProcessJobs->new;
+                my $action = GW::Action::ProcessJobs->new_from_cached_repo_set_d($c->received_data->cached_repo_set_d);
                 $action->db_registry($reg);
                 my $jobs = $action->get_jobs;
                 is $jobs->length, 1;

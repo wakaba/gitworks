@@ -30,6 +30,16 @@ sub mysql_server {
     return $self->{mysql_server} ||= Test::AnyEvent::MySQL::CreateDatabase->new;
 }
 
+sub cached_repo_set_dir {
+    my $self = shift;
+    return $self->{cached_repo_set_dir} ||= File::Temp->newdir;
+}
+
+sub cached_repo_set_d {
+    my $self = shift;
+    return $self->{cached_repo_set_d} ||= dir($self->cached_repo_set_dir->dirname);
+}
+
 sub dsns_json_f {
     my $self = shift;
     return $self->mysql_server->json_f;
@@ -81,6 +91,7 @@ sub _start_web_server {
 
     local $ENV{GW_DSNS_JSON} = $self->dsns_json_f;
     local $ENV{GW_API_KEY_FILE_NAME} = $self->api_key_f;
+    local $ENV{GW_CACHED_REPO_SET_DIR_NAME} = $self->cached_repo_set_d;
 
     $self->{web_server} = my $server = Test::AnyEvent::plackup->new;
     $server->app($self->psgi_f);

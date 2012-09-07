@@ -12,6 +12,8 @@ use GW::Action::ProcessRepository;
 my $commands_d = file(__FILE__)->dir->parent->parent->subdir('config', 'commands');
 my $DEBUG = 0;
 
+my $cached_d = dir(tempdir(CLEANUP => !$DEBUG));
+
 test {
     my $c = shift;
 
@@ -30,7 +32,7 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job($job);
+    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
     $action->command_dir_d($commands_d);
     $action->run_action_as_cv->cb(sub {
         test {
@@ -71,7 +73,7 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job($job);
+    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
     $action->command_dir_d($commands_d);
     $action->run_action_as_cv->cb(sub {
         test {
@@ -115,7 +117,7 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job($job);
+    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
     $action->command_dir_d($commands_d);
     $action->run_action_as_cv->cb(sub {
         test {
@@ -152,7 +154,7 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job($job);
+    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
     $action->command_dir_d($commands_d);
     $action->run_action_as_cv->cb(sub {
         test {
@@ -190,7 +192,7 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job($job);
+    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
     $action->command_dir_d($commands_d);
     $action->run_action_as_cv->cb(sub {
         test {
@@ -253,7 +255,7 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job($job);
+    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
     $action->command_dir_d($commands_d);
     $action->run_action_as_cv->cb(sub {
         test {
@@ -288,7 +290,7 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job($job);
+    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
     $action->command_dir_d($commands_d);
     $action->run_action_as_cv->cb(sub {
         test {
@@ -319,7 +321,7 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job($job);
+    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
     $action->command_dir_d($commands_d);
     $action->run_action_as_cv->cb(sub {
         test {
@@ -351,7 +353,7 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job($job);
+    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
     $action->command_dir_d($commands_d);
     $action->run_action_as_cv->cb(sub {
         test {
@@ -383,7 +385,7 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job($job);
+    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
     $action->command_dir_d($commands_d);
     $action->run_action_as_cv->cb(sub {
         test {
