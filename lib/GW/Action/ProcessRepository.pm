@@ -123,7 +123,7 @@ sub clone_as_cv {
         my $clone_cv = $self->git_as_cv(['clone', $self->cached_repo_d => $self->temp_repo_d->stringify], d => $self->cached_repo_d)->cb(sub {
             $self->git_as_cv(['checkout', $self->revision])->cb(sub {
                 $self->git_as_cv(['submodule', 'update', '--init'])->cb(sub {
-                    $self->git_as_cv(['remote', 'set-url', '--push', 'origin', $self->url])->cb(sub {
+                    $self->git_as_cv(['remote', 'set-url', 'origin', $self->url])->cb(sub {
                         $cv->send;
                     });
                 });
