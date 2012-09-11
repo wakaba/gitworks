@@ -29,11 +29,15 @@ test {
     my $url = q<git://hoge/fuga> . rand;
     $action1->add_repository($url);
 
+    delete $reg->{Instances};
+
     eq_or_diff $loader1->get_repository_urls, {$url => 1};
     eq_or_diff $loader2->get_repository_urls, {};
 
     my $url2 = q<git://hoge/fuga> . rand;
     $action2->add_repository($url2);
+
+    delete $reg->{Instances};
 
     eq_or_diff $loader1->get_repository_urls, {$url => 1};
     eq_or_diff $loader2->get_repository_urls, {$url2 => 1};

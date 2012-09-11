@@ -65,10 +65,26 @@ sub process {
              defined $path->[1] and
              not defined $path->[2]) {
         $app->requires_basic_auth({api_key => $APIKey});
-        
-        require GW::Loader::RepositorySet;
-        my $loader = GW::Loader::RepositorySet->new_from_dbreg_and_set_name($reg, $path->[1]);
-        return $app->send_json([keys %{$loader->get_repository_urls}]);
+        if ($app->http->request_method eq 'POST') {
+            my $action = $app->bare_param('action') || '';
+            if ($action eq 'command') {
+                require GW::Action::ScheduleCommandByRepositorySet;
+                my $scheduler = GW::Action::ScheduleCommandByRepositorySet->new_from_dbreg_and_set_name($reg, $path->[1]);
+                my $command = $app->bare_param('command') 
+                    or $app->throw_error(400, reason_phrase => 'Bad command');
+                $scheduler->schedule_command($command);
+                $app->http->set_status(202, reason_phrase => 'Accepted');
+                $app->http->send_response_body_as_text("202 Accepted\n");
+                $app->http->close_response_body;
+                return $app->throw;
+            } else {
+                return $app->throw_error(400, reason_phrase => 'Bad action');
+            }
+        } else {
+            require GW::Loader::RepositorySet;
+            my $loader = GW::Loader::RepositorySet->new_from_dbreg_and_set_name($reg, $path->[1]);
+            return $app->send_json([keys %{$loader->get_repository_urls}]);
+        }
     } elsif ($path->[0] eq 'jobs') {
         $app->requires_request_method ({POST => 1});
         $app->requires_basic_auth({api_key => $APIKey});

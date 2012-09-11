@@ -26,14 +26,20 @@ test {
     $action->add_repository($url);
     $action->add_repository($url);
 
+    delete $reg->{Instances};
+
     eq_or_diff $loader->get_repository_urls, {$url => 1};
 
     my $url2 = q<git://hoge/fuga> . rand;
     $action->add_repository($url2);
 
+    delete $reg->{Instances};
+
     eq_or_diff $loader->get_repository_urls, {$url => 1, $url2 => 1};
 
     $action->delete_repository($url);
+
+    delete $reg->{Instances};
 
     eq_or_diff $loader->get_repository_urls, {$url2 => 1};
     
