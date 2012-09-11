@@ -40,7 +40,7 @@ sub process {
         my $json = $app->request_json;
         my $branch = $json->{ref} || '';
         $branch =~ s{^refs/heads/}{};
-
+        
         require GW::Action::InsertJob;
         my $action = GW::Action::InsertJob->new_from_repository(
             $json->{repository}->{url}
@@ -56,7 +56,7 @@ sub process {
                 || $app->throw_error(400, reason_phrase => 'bad hook_args.action_type'),
             $json->{hook_args}->{action_args} || {},
         );
-        
+
         $app->http->set_status(202, reason_phrase => 'Accepted');
         $app->http->send_response_body_as_text("202 Accepted\n");
         $app->http->close_response_body;

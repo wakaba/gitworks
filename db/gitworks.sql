@@ -16,3 +16,16 @@ CREATE TABLE job (
   KEY (process_id, process_started),
   KEY (process_started)
 ) DEFAULT CHARSET=BINARY;
+
+CREATE TABLE repository_set (
+  id BIGINT UNSIGNED NOT NULL,
+  created BIGINT UNSIGNED NOT NULL DEFAULT 0,
+
+  set_name VARBINARY(127) NOT NULL,
+  repository_url VARBINARY(511) NOT NULL,
+  PRIMARY KEY (id),
+  KEY (created),
+  UNIQUE KEY (set_name, repository_url),
+  KEY (set_name, created),
+  KEY (repository_url, created)
+) DEFAULT CHARSET=BINARY;

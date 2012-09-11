@@ -28,6 +28,8 @@ sub load_by_f {
         },
     };
 
+    $reg->{Registry}->{gitworks}->{sources}->{default}->{dsn}
+        = $dsns->{dsns}->{gitworks} or die "|gitworks| is not defined";
     $reg->{Registry}->{gitworks}->{sources}->{master}->{dsn}
         = $dsns->{dsns}->{gitworks} or die "|gitworks| is not defined";
     $reg->{Registry}->{gitworks}->{sources}->{master}->{writable} = 1;
