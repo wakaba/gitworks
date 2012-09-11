@@ -86,9 +86,11 @@ sub process_jobs_as_cv {
     $cv->begin(sub { $_[0]->send });
 
     my $cached_d = $self->cached_repo_set_d;
+    my $dbreg = $self->db_registry;
     $self->get_jobs->each(sub {
         my $job = $_;
         my $repo_action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
+        $repo_action->dbreg($dbreg);
         $repo_action->onmessage($self->onmessage);
         $cv->begin;
         $repo_action->run_action_as_cv->cb(sub {

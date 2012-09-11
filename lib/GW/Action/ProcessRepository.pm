@@ -30,6 +30,13 @@ sub revision {
     return $_[0]->{job}->{repository_revision};
 }
 
+sub dbreg {
+    if (@_ > 1) {
+        $_[0]->{dbreg} = $_[1];
+    }
+    return $_[0]->{dbreg};
+}
+
 sub onmessage {
     if (@_ > 1) {
         $_[0]->{onmessage} = $_[1];
@@ -151,6 +158,22 @@ sub run_action_as_cv {
     my $args = $self->{job}->{args};
 
     my $cv = AE::cv;
+    if ($action eq 'repository_set.add' or
+        $action eq 'repository_set.delete') {
+        my $set_name = $args->{set_name};
+        if (defined $set_name and length $set_name) {
+            require GW::Action::EditRepositorySet;
+            my $edit_action = GW::Action::EditRepositorySet->new_from_dbreg_and_set_name($self->dbreg, $set_name);
+            my $method = $action =~ /delete/
+                ? 'delete_repository' : 'add_repository';
+            $edit_action->$method($self->url);
+        } else {
+            warn "|set_name| is not specified";
+        }
+        $cv->send;
+        return $cv;
+    }
+
     $self->clone_as_cv->cb(sub {
         if ($action eq 'make') {
             my $run_cv = run_cmd

@@ -171,4 +171,68 @@ test {
 } n => 3, wait => sub { mysql_and_web_and_workaholicd_as_cv },
     name => 'by workaholicd';
 
+test {
+    my $c = shift;
+
+    my $host = $c->received_data->web_host;
+    my $reg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+
+    my $temp_d = dir(tempdir(CLEANUP => 1));
+    my $temp2_d = dir(tempdir(CLEANUP => 1));
+    system "cd $temp_d && git init && echo 'hoge:\n\techo 1234 > @{[$temp2_d]}/foo.txt' > Makefile && git add Makefile && git commit -m New";
+    my $rev = `cd $temp_d && git rev-parse HEAD`;
+
+    my $cv1 = AE::cv;
+    http_post
+        url => qq<http://$host/hook>,
+        basic_auth => [api_key => 'testapikey'],
+        content => perl2json_bytes {
+            repository => {url => $temp_d->stringify},
+            ref => 'refs/heads/master',
+            after => $rev,
+            hook_args => {
+                action_type => 'repository_set.add',
+                action_args => {set_name => 'set 1'},
+            },
+        },
+        anyevent => 1,
+        cb => sub {
+            my ($req, $res) = @_;
+            test {
+                is $res->code, 202;
+                $cv1->send;
+            } $c;
+        };
+
+    my $cv2 = AE::cv;
+    $cv1->cb(sub {
+        my $timer; $timer = AE::timer 7, 0, sub {
+            test {
+                undef $timer;
+                $cv2->send;
+            } $c;
+        };
+    });
+
+    $cv2->cb(sub {
+        test {
+            http_get
+                url => qq<http://$host/sets/set%201>,
+                basic_auth => [api_key => 'testapikey'],
+                anyevent => 1,
+                cb => sub {
+                    my ($req, $res) = @_;
+                    test {
+                        is $res->code, 200;
+                        my $json = json_bytes2perl $res->content;
+                        eq_or_diff $json, [$temp_d->stringify];
+                        done $c;
+                        undef $c;
+                    } $c;
+                };
+        } $c;
+    });
+} n => 3, wait => sub { mysql_and_web_and_workaholicd_as_cv },
+    name => 'by workaholicd, repository_set.add';
+
 run_tests;

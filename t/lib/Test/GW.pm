@@ -14,12 +14,12 @@ use Test::Differences;
 use Test::X1;
 use AnyEvent;
 use Web::UserAgent::Functions qw(http_get http_post http_post_data);
-use JSON::Functions::XS qw(perl2json_bytes);
+use JSON::Functions::XS qw(perl2json_bytes json_bytes2perl);
 
 our @EXPORT = (
     @Test::More::EXPORT, @Test::Differences::EXPORT,
     @Test::X1::EXPORT,
-    qw(http_get http_post http_post_data perl2json_bytes),
+    qw(http_get http_post http_post_data perl2json_bytes json_bytes2perl),
 );
 
 push @EXPORT, qw(mysql_as_cv);

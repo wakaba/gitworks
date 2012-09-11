@@ -55,12 +55,20 @@ sub process {
             $json->{hook_args}->{action_type}
                 || $app->throw_error(400, reason_phrase => 'bad hook_args.action_type'),
             $json->{hook_args}->{action_args} || {},
-        );
+       );
 
         $app->http->set_status(202, reason_phrase => 'Accepted');
         $app->http->send_response_body_as_text("202 Accepted\n");
         $app->http->close_response_body;
         return $app->throw;
+    } elsif ($path->[0] eq 'sets' and
+             defined $path->[1] and
+             not defined $path->[2]) {
+        $app->requires_basic_auth({api_key => $APIKey});
+        
+        require GW::Loader::RepositorySet;
+        my $loader = GW::Loader::RepositorySet->new_from_dbreg_and_set_name($reg, $path->[1]);
+        return $app->send_json([keys %{$loader->get_repository_urls}]);
     } elsif ($path->[0] eq 'jobs') {
         $app->requires_request_method ({POST => 1});
         $app->requires_basic_auth({api_key => $APIKey});
