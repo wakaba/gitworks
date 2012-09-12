@@ -65,3 +65,5 @@ install-local-server:
 	    SERVER_TYPE=web SERVER_TYPE_LOG=web
 	$(MAKE) --makefile=Makefile.service install $(LOCAL_SERVER_ARGS) \
 	    SERVER_TYPE=workaholicd SERVER_TYPE_LOG=workaholicd
+
+autoupdatenightly:
