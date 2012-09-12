@@ -28,7 +28,7 @@ cinnamon: %: Makefile-setupenv
 git-submodules:
 	$(GIT) submodule update --init
 
-deps: local-submodules pmb-install
+deps: local-submodules pmb-install lperl
 
 # ------ Tests ------
 
