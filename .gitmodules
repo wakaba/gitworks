@@ -28,3 +28,9 @@
 [submodule "modules/workaholicd"]
 	path = modules/workaholicd
 	url = git://github.com/wakaba/workaholicd
+[submodule "modules/temma"]
+	path = modules/temma
+	url = git://github.com/wakaba/temma
+[submodule "modules/manakai"]
+	path = modules/manakai
+	url = git://github.com/wakaba/manakai.git

@@ -67,4 +67,9 @@ install-local-server:
 	$(MAKE) --makefile=Makefile.service install $(LOCAL_SERVER_ARGS) \
 	    SERVER_TYPE=workaholicd SERVER_TYPE_LOG=workaholicd
 
+# ------ Deps ------
+
+add-git-submodules:
+	$(GIT) submodule foreach "git config -f .gitmodules --get-regexp ^submodule\\.modules/.*\\.url$$ || :" | grep ^submodule | sed 's/^\S\+\s//' | sort | uniq | sed 's/\(\([^\\/]\+\)\?\)$$/\1 modules\/\2/; s/\.git$$//; s/^/git submodule add /' | grep -v -f config/git/submodule-no-autoadd.txt | sh
+
 autoupdatenightly:
