@@ -8,6 +8,7 @@ use MIME::Base64 qw(decode_base64);
 use GW::Warabe::App;
 
 our $APIKey;
+my $templates_d = file(__FILE__)->dir->parent->parent->resolve->subdir('templates');
 
 sub load_api_key_by_env {
     my $file_name = $ENV{GW_API_KEY_FILE_NAME}
@@ -74,12 +75,12 @@ sub process {
         $app->http->close_response_body;
         return $app->throw;
     } elsif ($path->[0] eq 'sets' and
-             defined $path->[1] and $path->[1] =~ /.\.json\z/ and
+             defined $path->[1] and $path->[1] =~ /./ and
              not defined $path->[2]) {
-        # /sets/{set_name}.json
-        $class->auth($app, 1);
+        # /sets/{set_name}[.json]
         my $set_name = $path->[1];
-        $set_name =~ s/\.json\z//;
+        my $is_json = $set_name =~ s/\.json\z//;
+        $class->auth($app, $is_json);
         if ($app->http->request_method eq 'POST') {
             my $action = $app->bare_param('action') || '';
             if ($action eq 'command') {
@@ -98,7 +99,21 @@ sub process {
         } else {
             require GW::Loader::RepositorySet;
             my $loader = GW::Loader::RepositorySet->new_from_dbreg_and_set_name($reg, $set_name);
-            return $app->send_json([keys %{$loader->get_repository_urls}]);
+            if ($is_json) {
+                return $app->send_json([keys %{$loader->get_repository_urls}]);
+            } else {
+                my $http = $app->http;
+                $http->response_mime_type->set_value('text/html');
+                $http->response_mime_type->set_param(charset => 'utf-8');
+                my $fh = GW::Web::Printer->new_from_http($http);
+                require Temma;
+                return Temma->process_html(
+                    $templates_d->file('sets.html.tm'), {
+                        set_name => $set_name,
+                        urls => $loader->get_repository_urls,
+                    } => $fh, sub { $http->close_response_body; $app->throw },
+                );
+            }
         }
     } elsif ($path->[0] eq 'repos' and
              defined $path->[1] and $path->[1] eq 'statuses' and
@@ -178,5 +193,15 @@ sub process {
 
     return $app->throw_error(404);
 }
+
+package GW::Web::Printer;
+
+sub new_from_http {
+    return bless {http => $_[1]}, $_[0];
+}
+
+sub print {
+    $_[0]->{http}->send_response_body_as_text($_[1]);
+};
 
 1;
