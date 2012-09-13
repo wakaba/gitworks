@@ -32,6 +32,8 @@ sub psgi_app {
 sub process {
     my ($class, $app, $reg, $cached_d) = @_;
 
+    # XXX Origin: test against CSRF attack
+
     my $path = $app->path_segments;
     if ($path->[0] eq 'hook') {
         $app->requires_request_method({POST => 1});
@@ -84,6 +86,54 @@ sub process {
             require GW::Loader::RepositorySet;
             my $loader = GW::Loader::RepositorySet->new_from_dbreg_and_set_name($reg, $path->[1]);
             return $app->send_json([keys %{$loader->get_repository_urls}]);
+        }
+    } elsif ($path->[0] eq 'repos' and
+             defined $path->[1] and $path->[1] eq 'statuses' and
+             defined $path->[2] and length $path->[2] and
+             not defined $path->[3]) {
+        # /repos/statuses/{sha}
+
+        # <http://developer.github.com/v3/repos/statuses/>
+        # <https://github.com/blog/1227-commit-status-api>
+
+        my $url = $app->bare_param('repository_url')
+            or $app->throw_error(400, reason_phrase => 'No repository_url');
+        my $sha = $path->[2];
+        require GW::Defs::Statuses;
+        if ($app->http->request_method eq 'POST') {
+            require GW::Action::AddCommitStatus;
+            my $action = GW::Action::AddCommitStatus->new_from_dbreg_and_repository_url($reg, $url);
+            my $state = $app->bare_param('state') || '';
+            $state = $GW::Defs::Statuses::CommitStatusNameToCode->{$state}
+                or $app->throw_error(400, reason_phrase => 'Bad state');
+            my $target_url = $app->bare_param('target_url');
+            my $desc = $app->text_param('description');
+            $action->add_commit_status(
+                sha => $sha,
+                state => $state,
+                target_url => $target_url,
+                description => $desc,
+            );
+            
+            $app->http->set_status(201);
+            $app->send_json({
+                state => $GW::Defs::Statuses::CommitStatusCodeToName->{$state},
+                target_url => $target_url,
+                description => $desc,
+            });
+            return $app->throw;
+        } else {
+            require GW::Loader::CommitStatuses;
+            my $loader = GW::Loader::CommitStatuses->new_from_dbreg_and_repository_url($reg, $url);
+            $app->send_json($loader->get_commit_statuses($sha)->map(sub {
+                return {
+                    state => $GW::Defs::Statuses::CommitStatusCodeToName->{$_->{state}},
+                    target_url => $_->{target_url},
+                    description => $_->{description},
+                    id => $_->{id},
+                };
+            }));
+            return $app->throw;
         }
     } elsif ($path->[0] eq 'jobs') {
         $app->requires_request_method ({POST => 1});

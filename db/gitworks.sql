@@ -29,3 +29,26 @@ CREATE TABLE repository_set (
   KEY (set_name, created),
   KEY (repository_url, created)
 ) DEFAULT CHARSET=BINARY;
+
+CREATE TABLE repository (
+  id BIGINT UNSIGNED NOT NULL,
+  created BIGINT UNSIGNED NOT NULL,
+  repository_url VARBINARY(511) NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY (repository_url),
+  KEY (created)
+) DEFAULT CHARSET=BINARY;
+
+CREATE TABLE commit_status (
+  id BIGINT UNSIGNED NOT NULL,
+  created DOUBLE NOT NULL,
+  repository_id BIGINT UNSIGNED NOT NULL,
+  sha VARBINARY(40) NOT NULL,
+  `state` TINYINT UNSIGNED NOT NULL,
+  target_url VARBINARY(511) NOT NULL,
+  description VARBINARY(511) NOT NULL,
+  PRIMARY KEY (id),
+  KEY (repository_id, sha, created),
+  KEY (repository_id, created),
+  KEY (created)
+) DEFAULT CHARSET=BINARY;
