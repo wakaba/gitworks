@@ -24,6 +24,23 @@ test {
         cb => sub {
             my ($req, $res) = @_;
             test {
+                is $res->code, 401;
+                done $c;
+            } $c;
+        };
+} name => 'get', n => 1, wait => $default_server;
+
+test {
+    my $c = shift;
+
+    my $host = $c->received_data->web_host;
+    http_get
+        url => qq<http://$host/jobs>,
+        basic_auth => [api_key => 'testapikey'],
+        anyevent => 1,
+        cb => sub {
+            my ($req, $res) = @_;
+            test {
                 is $res->code, 405;
                 done $c;
             } $c;

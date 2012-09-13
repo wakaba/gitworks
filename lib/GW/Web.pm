@@ -29,6 +29,15 @@ sub psgi_app {
     };
 }
 
+sub auth {
+    my (undef, $app, $is_api) = @_;
+    if ($is_api) {
+        $app->requires_basic_auth({api_key => $APIKey}, realm => 'API');
+    } else {
+        $app->requires_basic_auth({develop => $APIKey}, realm => 'Pages');
+    }
+}
+
 sub process {
     my ($class, $app, $reg, $cached_d) = @_;
 
@@ -37,8 +46,8 @@ sub process {
     my $path = $app->path_segments;
     if ($path->[0] eq 'hook') {
         # /hook
+        $class->auth($app, 1);
         $app->requires_request_method({POST => 1});
-        $app->requires_basic_auth({api_key => $APIKey});
 
         my $json = $app->request_json;
         my $branch = $json->{ref} || '';
@@ -68,7 +77,7 @@ sub process {
              defined $path->[1] and $path->[1] =~ /.\.json\z/ and
              not defined $path->[2]) {
         # /sets/{set_name}.json
-        $app->requires_basic_auth({api_key => $APIKey});
+        $class->auth($app, 1);
         my $set_name = $path->[1];
         $set_name =~ s/\.json\z//;
         if ($app->http->request_method eq 'POST') {
@@ -100,7 +109,7 @@ sub process {
         # <http://developer.github.com/v3/repos/statuses/>
         # <https://github.com/blog/1227-commit-status-api>
 
-        $app->requires_basic_auth({api_key => $APIKey});
+        $class->auth($app, 1);
         my $url = $app->bare_param('repository_url')
             or $app->throw_error(400, reason_phrase => 'No repository_url');
         my $sha = $path->[2];
@@ -143,8 +152,8 @@ sub process {
         }
     } elsif ($path->[0] eq 'jobs') {
         # /jobs
+        $class->auth($app, 1);
         $app->requires_request_method ({POST => 1});
-        $app->requires_basic_auth({api_key => $APIKey});
 
         my $http = $app->http;
         require GW::Action::ProcessJobs;
