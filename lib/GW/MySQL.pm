@@ -28,11 +28,13 @@ sub load_by_f {
         },
     };
 
-    $reg->{Registry}->{gitworks}->{sources}->{default}->{dsn}
-        = $dsns->{dsns}->{gitworks} or die "|gitworks| is not defined";
-    $reg->{Registry}->{gitworks}->{sources}->{master}->{dsn}
-        = $dsns->{dsns}->{gitworks} or die "|gitworks| is not defined";
-    $reg->{Registry}->{gitworks}->{sources}->{master}->{writable} = 1;
+    for (qw(gitworks gitworkslogs)) {
+        $reg->{Registry}->{$_}->{sources}->{default}->{dsn}
+            = $dsns->{dsns}->{$_} or die "|$_| is not defined";
+        $reg->{Registry}->{$_}->{sources}->{master}->{dsn}
+            = $dsns->{dsns}->{$_} or die "|$_| is not defined";
+        $reg->{Registry}->{$_}->{sources}->{master}->{writable} = 1;
+    }
 
     return $reg;
 }

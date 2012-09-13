@@ -1,2 +1,5 @@
 db gitworks
 table gitworks.sql
+
+db gitworkslogs
+table gitworkslogs.sql
