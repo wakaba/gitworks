@@ -159,6 +159,22 @@ sub get_branches_as_cv {
     return $cv;
 }
 
+sub get_tags_as_cv {
+    my $self = shift;
+    my $cv = AE::cv;
+    $self->prepare_cached_repo_d_as_cv->cb(sub {
+        my $result = '';
+        $self->git_as_cv(
+            ['show-ref', '--dereference', '--tags'],
+            d => $self->cached_repo_d,
+            onstdout => \$result,
+        )->cb(sub {
+            $cv->send([map { $_->[1] =~ s{^refs/tags/}{}; $_ } map { [split /\s+/, $_] } split /\n/, $result]);
+        });
+    });
+    return $cv;
+}
+
 sub command_dir_d {
     if (@_ > 1) {
         $_[0]->{command_dir_d} = $_[1];
