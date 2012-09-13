@@ -70,6 +70,7 @@ Test::mysqld~0.14
 Path::Class~0.26
 Module::Build~0.4002
 OAuth::Lite~1.31
+JSON~2.53
 Pod::Cache~1.51
 Net::SSLeay~1.48
 Devel::StackTrace::AsHTML~0.11
@@ -112,7 +113,6 @@ Data::Dumper~2.131
 ExtUtils::ParseXS~3.15
 Cwd~3.33
 IO::Socket::SSL~1.76
-Net::LibIDN~0.12
 Bundle::DBI~12.008695
 Class::Data::Inheritable~0.08
 Exporter~5.66
