@@ -5,6 +5,7 @@ use File::Temp;
 use Path::Class;
 use AnyEvent;
 use AnyEvent::Util;
+use List::Ish;
 use Encode;
 use Digest::SHA1 qw(sha1_hex);
 
@@ -153,7 +154,7 @@ sub get_branches_as_cv {
             d => $self->cached_repo_d,
             onstdout => \$result,
         )->cb(sub {
-            $cv->send([map { $_->[1] =~ s{^refs/heads/}{}; $_ } map { [split /\s+/, $_] } split /\n/, $result]);
+            $cv->send(List::Ish->new([map { $_->[1] =~ s{^refs/heads/}{}; $_ } map { [split /\s+/, $_] } split /\n/, $result]));
         });
     });
     return $cv;
@@ -169,7 +170,7 @@ sub get_tags_as_cv {
             d => $self->cached_repo_d,
             onstdout => \$result,
         )->cb(sub {
-            $cv->send([map { $_->[1] =~ s{^refs/tags/}{}; $_ } map { [split /\s+/, $_] } split /\n/, $result]);
+            $cv->send(List::Ish->new([map { $_->[1] =~ s{^refs/tags/}{}; $_ } map { [split /\s+/, $_] } split /\n/, $result]));
         });
     });
     return $cv;

@@ -107,62 +107,82 @@ sub process {
                 $http->response_mime_type->set_param(charset => 'utf-8');
                 my $fh = GW::Web::Printer->new_from_http($http);
                 require Temma;
-                return Temma->process_html(
+                Temma->process_html(
                     $templates_d->file('sets.html.tm'), {
                         set_name => $set_name,
                         urls => $loader->get_repository_urls,
-                    } => $fh, sub { $http->close_response_body; $app->throw },
+                    } => $fh, sub { $http->close_response_body },
                 );
+                return $app->throw;
             }
         }
-    } elsif ($path->[0] eq 'repos' and
-             defined $path->[1] and $path->[1] eq 'statuses' and
-             defined $path->[2] and $path->[2] =~ /.\.json\z/ and
-             not defined $path->[3]) {
-        # /repos/statuses/{sha}.json
-
-        # <http://developer.github.com/v3/repos/statuses/>
-        # <https://github.com/blog/1227-commit-status-api>
-
+    } elsif ($path->[0] eq 'repos') {
         $class->auth($app, 1);
         my $url = $app->bare_param('repository_url')
             or $app->throw_error(400, reason_phrase => 'No repository_url');
-        my $sha = $path->[2];
-        $sha =~ s/\.json\z//;
-        require GW::Defs::Statuses;
-        if ($app->http->request_method eq 'POST') {
-            require GW::Action::AddCommitStatus;
-            my $action = GW::Action::AddCommitStatus->new_from_dbreg_and_repository_url($reg, $url);
-            my $state = $app->bare_param('state') || '';
-            $state = $GW::Defs::Statuses::CommitStatusNameToCode->{$state}
-                or $app->throw_error(400, reason_phrase => 'Bad state');
-            my $target_url = $app->bare_param('target_url');
-            my $desc = $app->text_param('description');
-            $action->add_commit_status(
-                sha => $sha,
-                state => $state,
-                target_url => $target_url,
-                description => $desc,
-            );
-            
-            $app->http->set_status(201);
-            $app->send_json({
-                state => $GW::Defs::Statuses::CommitStatusCodeToName->{$state},
-                target_url => $target_url,
-                description => $desc,
+        if (defined $path->[1] and $path->[1] eq 'statuses' and
+            defined $path->[2] and $path->[2] =~ /.\.json\z/ and
+            not defined $path->[3]) {
+            # /repos/statuses/{sha}.json
+
+            # <http://developer.github.com/v3/repos/statuses/>
+            # <https://github.com/blog/1227-commit-status-api>
+
+            my $sha = $path->[2];
+            $sha =~ s/\.json\z//;
+            require GW::Defs::Statuses;
+            if ($app->http->request_method eq 'POST') {
+                require GW::Action::AddCommitStatus;
+                my $action = GW::Action::AddCommitStatus->new_from_dbreg_and_repository_url($reg, $url);
+                my $state = $app->bare_param('state') || '';
+                $state = $GW::Defs::Statuses::CommitStatusNameToCode->{$state}
+                    or $app->throw_error(400, reason_phrase => 'Bad state');
+                my $target_url = $app->bare_param('target_url');
+                my $desc = $app->text_param('description');
+                $action->add_commit_status(
+                    sha => $sha,
+                    state => $state,
+                    target_url => $target_url,
+                    description => $desc,
+                );
+                
+                $app->http->set_status(201);
+                $app->send_json({
+                    state => $GW::Defs::Statuses::CommitStatusCodeToName->{$state},
+                    target_url => $target_url,
+                    description => $desc,
+                });
+                return $app->throw;
+            } else {
+                require GW::Loader::CommitStatuses;
+                my $loader = GW::Loader::CommitStatuses->new_from_dbreg_and_repository_url($reg, $url);
+                $app->send_json($loader->get_commit_statuses($sha)->map(sub {
+                    return {
+                        state => $GW::Defs::Statuses::CommitStatusCodeToName->{$_->{state}},
+                        target_url => $_->{target_url},
+                        description => $_->{description},
+                        id => $_->{id},
+                    };
+                }));
+                return $app->throw;
+            }
+        } elsif (defined $path->[1] and $path->[1] eq 'branches' and
+                 not defined $path->[2]) {
+            # /repos/tags
+            require GW::Action::ProcessRepository;
+            my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d({repository_url => $url}, $cached_d);
+            $action->get_branches_as_cv->cb(sub {
+                $app->send_json($_[0]->recv->map(sub { return {name => $_->[1], commit => {sha => $_->[0]}} }));
             });
             return $app->throw;
-        } else {
-            require GW::Loader::CommitStatuses;
-            my $loader = GW::Loader::CommitStatuses->new_from_dbreg_and_repository_url($reg, $url);
-            $app->send_json($loader->get_commit_statuses($sha)->map(sub {
-                return {
-                    state => $GW::Defs::Statuses::CommitStatusCodeToName->{$_->{state}},
-                    target_url => $_->{target_url},
-                    description => $_->{description},
-                    id => $_->{id},
-                };
-            }));
+        } elsif (defined $path->[1] and $path->[1] eq 'tags' and
+                 not defined $path->[2]) {
+            # /repos/tags
+            require GW::Action::ProcessRepository;
+            my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d({repository_url => $url}, $cached_d);
+            $action->get_tags_as_cv->cb(sub {
+                $app->send_json($_[0]->recv->map(sub { return {name => $_->[1], commit => {sha => $_->[0]}} }));
+            });
             return $app->throw;
         }
     } elsif ($path->[0] eq 'jobs') {
