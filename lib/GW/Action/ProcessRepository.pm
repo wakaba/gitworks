@@ -109,10 +109,8 @@ sub git_as_cv {
     ;
 }
 
-sub clone_as_cv {
+sub prepare_cached_repo_d_as_cv {
     my $self = shift;
-    my $cv = AE::cv;
-
     my $cv1 = AE::cv;
     $self->has_cached_repo_d_as_cv->cb(sub {
         if ($_[0]->recv) {
@@ -125,8 +123,13 @@ sub clone_as_cv {
             });
         }
     });
+    return $cv1;
+}
 
-    $cv1->cb(sub {
+sub clone_as_cv {
+    my $self = shift;
+    my $cv = AE::cv;
+    $self->prepare_cached_repo_d_as_cv->cb(sub {
         my $clone_cv = $self->git_as_cv(['clone', $self->cached_repo_d => $self->temp_repo_d->stringify], d => $self->cached_repo_d)->cb(sub {
             $self->git_as_cv(['checkout', $self->revision])->cb(sub {
                 $self->git_as_cv(['submodule', 'update', '--init'])->cb(sub {
@@ -135,6 +138,22 @@ sub clone_as_cv {
                     });
                 });
             });
+        });
+    });
+    return $cv;
+}
+
+sub get_branches_as_cv {
+    my $self = shift;
+    my $cv = AE::cv;
+    $self->prepare_cached_repo_d_as_cv->cb(sub {
+        my $result = '';
+        $self->git_as_cv(
+            ['show-ref', '--dereference', '--heads'],
+            d => $self->cached_repo_d,
+            onstdout => \$result,
+        )->cb(sub {
+            $cv->send([map { $_->[1] =~ s{^refs/heads/}{}; $_ } map { [split /\s+/, $_] } split /\n/, $result]);
         });
     });
     return $cv;
