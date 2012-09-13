@@ -217,7 +217,7 @@ test {
     $cv2->cb(sub {
         test {
             http_get
-                url => qq<http://$host/sets/set%201>,
+                url => qq<http://$host/sets/set%201.json>,
                 basic_auth => [api_key => 'testapikey'],
                 anyevent => 1,
                 cb => sub {

@@ -27,6 +27,8 @@ test {
         description => qq<afee\x{4e00}agageee xya>,
     );
 
+    delete $dbreg->{Instances};
+
     my $loader = GW::Loader::CommitStatuses->new_from_dbreg_and_repository_url($dbreg, $url);
     my $list = $loader->get_commit_statuses($sha);
 

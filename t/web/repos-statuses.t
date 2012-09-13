@@ -15,7 +15,26 @@ test {
 
     my $sha = q<aabbr425gaaaaaaaaa>;
     http_get
-        url => qq<http://$host/repos/statuses/> . $sha,
+        url => qq<http://$host/repos/statuses/> . $sha . q<.json>,
+        anyevent => 1,
+        cb => sub {
+            my ($req, $res) = @_;
+            test {
+                is $res->code, 401;
+                done $c;
+                undef $c;
+            } $c;
+        };
+} n => 1, wait => $server, name => 'get no repository_url no auth';
+
+test {
+    my $c = shift;
+    my $host = $c->received_data->web_host;
+
+    my $sha = q<aabbr425gaaaaaaaaa>;
+    http_get
+        url => qq<http://$host/repos/statuses/> . $sha . q<.json>,
+        basic_auth => [api_key => 'testapikey'],
         anyevent => 1,
         cb => sub {
             my ($req, $res) = @_;
@@ -33,7 +52,8 @@ test {
 
     my $url = q<htfaefeafeeeafafee/fefea/e.gfee?a>;
     http_get
-        url => qq<http://$host/repos/statuses/>,
+        url => qq<http://$host/repos/statuses/.json>,
+        basic_auth => [api_key => 'testapikey'],
         params => {
             repository_url => $url,
         },
@@ -55,7 +75,8 @@ test {
     my $url = q<htfaefeafeeeafafee/fefea/e.gfee?a>;
     my $sha = q<aabbr425gaaaaaaaaa>;
     http_get
-        url => qq<http://$host/repos/statuses/> . $sha,
+        url => qq<http://$host/repos/statuses/> . $sha . q<.json>,
+        basic_auth => [api_key => 'testapikey'],
         params => {
             repository_url => $url,
         },
@@ -81,7 +102,57 @@ test {
 
     my $cv1 = AE::cv;
     http_post
-        url => qq<http://$host/repos/statuses/> . $sha,
+        url => qq<http://$host/repos/statuses/> . $sha . q<.json>,
+        params => {
+            repository_url => $url,
+            state => 'success',
+            target_url => q<hrr grg aega>,
+            description => qq<\x{452}\x{5623}aab>,
+        },
+        anyevent => 1,
+        cb => sub {
+            my ($req, $res) = @_;
+            test {
+                is $res->code, 401;
+                $cv1->send;
+            } $c;
+        };
+
+    my $cv2 = AE::cv;
+    $cv1->cb(sub {
+        test {
+            http_get
+                url => qq<http://$host/repos/statuses/> . $sha . q<.json>,
+                basic_auth => [api_key => 'testapikey'],
+                params => {
+                    repository_url => $url,
+                },
+                anyevent => 1,
+                cb => sub {
+                    my ($req, $res) = @_;
+                    test {
+                        is $res->code, 200;
+                        my $json = json_bytes2perl $res->content;
+                        eq_or_diff $json, [];
+                        done $c;
+                        undef $c;
+                    } $c;
+                };
+        } $c;
+    });
+} n => 3, name => 'post no auth', wait => $server;
+
+test {
+    my $c = shift;
+    my $host = $c->received_data->web_host;
+
+    my $url = q<htfaefeafeeeafafee/fefea/e.gfee?a>;
+    my $sha = q<aabbr425gaaaaaaaaage>;
+
+    my $cv1 = AE::cv;
+    http_post
+        url => qq<http://$host/repos/statuses/> . $sha . q<.json>,
+        basic_auth => [api_key => 'testapikey'],
         params => {
             repository_url => $url,
             state => 'success',
@@ -107,7 +178,8 @@ test {
     $cv1->cb(sub {
         test {
             http_get
-                url => qq<http://$host/repos/statuses/> . $sha,
+                url => qq<http://$host/repos/statuses/> . $sha . q<.json>,
+                basic_auth => [api_key => 'testapikey'],
                 params => {
                     repository_url => $url,
                 },
@@ -134,7 +206,8 @@ test {
     $cv2->cb(sub {
         test {
             http_post
-                url => qq<http://$host/repos/statuses/> . $sha,
+                url => qq<http://$host/repos/statuses/> . $sha . q<.json>,
+                basic_auth => [api_key => 'testapikey'],
                 params => {
                     repository_url => $url,
                     state => 'failure',
@@ -159,7 +232,8 @@ test {
     $cv3->cb(sub {
         test {
             http_get
-                url => qq<http://$host/repos/statuses/> . $sha,
+                url => qq<http://$host/repos/statuses/> . $sha . q<.json>,
+                basic_auth => [api_key => 'testapikey'],
                 params => {
                     repository_url => $url,
                 },

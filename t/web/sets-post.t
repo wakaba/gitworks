@@ -14,7 +14,7 @@ test {
 
     my $host = $c->received_data->web_host;
     http_post
-        url => qq<http://$host/sets/abc>,
+        url => qq<http://$host/sets/abc.json>,
         anyevent => 1,
         cb => sub {
             my ($req, $res) = @_;
@@ -30,7 +30,7 @@ test {
 
     my $host = $c->received_data->web_host;
     http_post
-        url => qq<http://$host/sets/abc>,
+        url => qq<http://$host/sets/abc.json>,
         basic_auth => [api_key => 'testapikey'],
         anyevent => 1,
         cb => sub {
@@ -47,7 +47,7 @@ test {
 
     my $host = $c->received_data->web_host;
     http_post
-        url => qq<http://$host/sets/abc>,
+        url => qq<http://$host/sets/abc.json>,
         basic_auth => [api_key => 'testapikey'],
         params => {
             action => 'command',
@@ -107,7 +107,7 @@ test {
     $cv2->cb(sub {
         test {
             http_post
-                url => qq<http://$host/sets/abc>,
+                url => qq<http://$host/sets/abc.json>,
                 basic_auth => [api_key => 'testapikey'],
                 params => {
                     action => 'command',

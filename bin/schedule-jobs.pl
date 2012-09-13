@@ -11,7 +11,7 @@ $api_key = decode_base64 $api_key;
 Web::UserAgent::Functions->check_socksify;
 
 my ($req, $res) = http_post
-    url => qq<http://$host/sets/> . (percent_encode_c $set_name),
+    url => qq<http://$host/sets/> . (percent_encode_c $set_name) . q<.json>,
     basic_auth => [api_key => $api_key],
     params => {
         action => 'command',

@@ -13,7 +13,7 @@ test {
 
     my $host = $c->received_data->web_host;
     http_get
-        url => qq<http://$host/sets/abc>,
+        url => qq<http://$host/sets/abc.json>,
         anyevent => 1,
         cb => sub {
             my ($req, $res) = @_;
@@ -29,7 +29,7 @@ test {
 
     my $host = $c->received_data->web_host;
     http_get
-        url => qq<http://$host/sets/abc>,
+        url => qq<http://$host/sets/abc.json>,
         basic_auth => [api_key => 'testapikey'],
         anyevent => 1,
         cb => sub {

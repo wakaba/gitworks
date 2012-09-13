@@ -36,6 +36,7 @@ sub process {
 
     my $path = $app->path_segments;
     if ($path->[0] eq 'hook') {
+        # /hook
         $app->requires_request_method({POST => 1});
         $app->requires_basic_auth({api_key => $APIKey});
 
@@ -64,14 +65,17 @@ sub process {
         $app->http->close_response_body;
         return $app->throw;
     } elsif ($path->[0] eq 'sets' and
-             defined $path->[1] and
+             defined $path->[1] and $path->[1] =~ /.\.json\z/ and
              not defined $path->[2]) {
+        # /sets/{set_name}.json
         $app->requires_basic_auth({api_key => $APIKey});
+        my $set_name = $path->[1];
+        $set_name =~ s/\.json\z//;
         if ($app->http->request_method eq 'POST') {
             my $action = $app->bare_param('action') || '';
             if ($action eq 'command') {
                 require GW::Action::ScheduleCommandByRepositorySet;
-                my $scheduler = GW::Action::ScheduleCommandByRepositorySet->new_from_dbreg_and_set_name($reg, $path->[1]);
+                my $scheduler = GW::Action::ScheduleCommandByRepositorySet->new_from_dbreg_and_set_name($reg, $set_name);
                 my $command = $app->bare_param('command') 
                     or $app->throw_error(400, reason_phrase => 'Bad command');
                 $scheduler->schedule_command($command);
@@ -84,21 +88,23 @@ sub process {
             }
         } else {
             require GW::Loader::RepositorySet;
-            my $loader = GW::Loader::RepositorySet->new_from_dbreg_and_set_name($reg, $path->[1]);
+            my $loader = GW::Loader::RepositorySet->new_from_dbreg_and_set_name($reg, $set_name);
             return $app->send_json([keys %{$loader->get_repository_urls}]);
         }
     } elsif ($path->[0] eq 'repos' and
              defined $path->[1] and $path->[1] eq 'statuses' and
-             defined $path->[2] and length $path->[2] and
+             defined $path->[2] and $path->[2] =~ /.\.json\z/ and
              not defined $path->[3]) {
-        # /repos/statuses/{sha}
+        # /repos/statuses/{sha}.json
 
         # <http://developer.github.com/v3/repos/statuses/>
         # <https://github.com/blog/1227-commit-status-api>
 
+        $app->requires_basic_auth({api_key => $APIKey});
         my $url = $app->bare_param('repository_url')
             or $app->throw_error(400, reason_phrase => 'No repository_url');
         my $sha = $path->[2];
+        $sha =~ s/\.json\z//;
         require GW::Defs::Statuses;
         if ($app->http->request_method eq 'POST') {
             require GW::Action::AddCommitStatus;
@@ -136,6 +142,7 @@ sub process {
             return $app->throw;
         }
     } elsif ($path->[0] eq 'jobs') {
+        # /jobs
         $app->requires_request_method ({POST => 1});
         $app->requires_basic_auth({api_key => $APIKey});
 
