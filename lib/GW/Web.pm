@@ -166,6 +166,39 @@ sub process {
                 }));
                 return $app->throw;
             }
+        } elsif (defined $path->[1] and $path->[1] eq 'logs.json' and
+                 not defined $path->[2]) {
+            # /repos/logs.json
+            if ($app->http->request_method eq 'POST') {
+                require GW::Action::AddLog;
+                my $action = GW::Action::AddLog->new_from_dbreg_and_repository_url($reg, $url);
+                my $sha = $app->bare_param('sha')
+                    or $app->throw_error(400, reason_phrase => 'Bad sha');
+                my $data = {
+                    sha => $sha,
+                    branch => $app->bare_param('branch'),
+                    data => $app->text_param('data'),
+                };
+                $action->add_log(%$data);
+                $app->http->set_status(201);
+                $app->send_json($data);
+                return $app->throw;
+            } else {
+                require GW::Loader::Logs;
+                my $loader = GW::Loader::Logs->new_from_dbreg_and_repository_url($reg, $url);
+                my $list = $loader->get_logs(
+                    sha => $app->bare_param('sha'),
+                    branch => $app->bare_param('branch'),
+                );
+                $app->send_json($list->map(sub { return {
+                    id => $_->{id},
+                    branch => $_->{branch},
+                    sha => $_->{sha},
+                    data => $_->{data},
+                    created => $_->{created},
+                } }));
+                return $app->throw;
+            }
         } elsif (defined $path->[1] and $path->[1] eq 'branches' and
                  not defined $path->[2]) {
             # /repos/tags
