@@ -11,11 +11,13 @@
 
   <dt>Branches
   <dd><ul id=list-branches data-template="
-    <a href class=link><code class=sha></code></a>
+    <a href class=link><code class=ref-name></code> <code class=sha></code></a>
   "></ul>
 
   <dt>Tags
-  <dd><ul id=list-logs></ul>
+  <dd><ul id=list-logs data-template="
+    <a href class=link><code class=ref-name></code> <code class=sha></code></a>
+  "></ul>
 </dl>
 
 <script>
@@ -33,6 +35,7 @@
   }
 
   var repoURL = document.documentElement.getAttribute('data-repository-url');
+
   loadJSON('/repos/branches.json?repository_url=' + encodeURIComponent(repoURL), function (json) {
     var ul = document.getElementById('list-branches');
     var template = ul.getAttribute('data-template');
@@ -40,12 +43,33 @@
       var entry = json[i];
       var li = document.createElement('li');
       li.innerHTML = template;
-      li.querySelector('.sha').textContent = entry.commit.sha;
+      li.querySelector('.ref-name').textContent = entry.name;
+      li.querySelector('.sha').textContent = entry.commit.sha.substring(0, 10);
       li.querySelector('.link').href = 'XXX/' + encodeURIComponent(entry.commit.sha) + '?repository_url=' + encodeURIComponent(repoURL);
       ul.appendChild(li);
     }
   }, function () {
     var ul = document.getElementById('list-branches');
+    var li = document.createElement('li');
+    li.className = 'error';
+    li.textContent = '(Error)';
+    ul.appendChild(li);
+  });
+
+  loadJSON('/repos/tags.json?repository_url=' + encodeURIComponent(repoURL), function (json) {
+    var ul = document.getElementById('list-tags');
+    var template = ul.getAttribute('data-template');
+    for (var i = 0; i < json.length; i++) {
+      var entry = json[i];
+      var li = document.createElement('li');
+      li.innerHTML = template;
+      li.querySelector('.ref-name').textContent = entry.name;
+      li.querySelector('.sha').textContent = entry.commit.sha.substring(0, 10);
+      li.querySelector('.link').href = 'XXX/' + encodeURIComponent(entry.commit.sha) + '?repository_url=' + encodeURIComponent(repoURL);
+      ul.appendChild(li);
+    }
+  }, function () {
+    var ul = document.getElementById('list-tags');
     var li = document.createElement('li');
     li.className = 'error';
     li.textContent = '(Error)';
