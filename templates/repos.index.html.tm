@@ -44,5 +44,11 @@
       li.querySelector('.link').href = 'XXX/' + encodeURIComponent(entry.commit.sha) + '?repository_url=' + encodeURIComponent(repoURL);
       ul.appendChild(li);
     }
+  }, function () {
+    var ul = document.getElementById('list-branches');
+    var li = document.createElement('li');
+    li.className = 'error';
+    li.textContent = '(Error)';
+    ul.appendChild(li);
   });
 </script>
