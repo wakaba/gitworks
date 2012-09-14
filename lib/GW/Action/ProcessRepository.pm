@@ -9,6 +9,7 @@ use List::Ish;
 use Encode;
 use Digest::SHA1 qw(sha1_hex);
 use GW::Defs::Statuses;
+use Time::HiRes qw(time);
 
 my $DEBUG = $ENV{GW_DEBUG};
 
@@ -206,6 +207,7 @@ sub run_test_as_cv {
     my $onmessage = $self->onmessage;
     my $command = "cd \Q$d\E && make test 2>&1";
     my $output = $command . "\n";
+    my $start_time = time;
     run_cmd(
         $command,
         '>' => sub {
@@ -217,18 +219,22 @@ sub run_test_as_cv {
     )->cb(sub {
         my $return = $_[0]->recv;
         my $failed = $return >> 8;
-        $output .= "Exited with status @{[$return >> 8]}\n";
+        my $end_time = time;
+        $output .= sprintf "Exited with status %d (%.2fs)\n",
+            $return >> 8, $end_time - $start_time;
         
+        my $title = 'GitWorks repository test - ' . ($failed ? 'Failed' : 'Succeeded');
         my $log_info = $self->log_action->add_log(
             branch => $self->branch,
             sha => $self->revision,
+            title => $title,
             data => $output,
         );
         $self->commit_status_action->add_commit_status(
             sha => $self->revision,
             state => $failed ? COMMIT_STATUS_FAILURE : COMMIT_STATUS_SUCCESS,
             target_url => $log_info->{logs_url},
-            description => 'GitWorks repository test - ' . ($failed ? 'Failed' : 'Succeeded'),
+            description => $title,
         );
         $cv->send;
     });

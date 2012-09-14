@@ -48,6 +48,7 @@ test {
             my $logs = $log_loader->get_logs(sha => $rev);
             is $logs->length, 1;
             is $logs->[0]->{sha}, $rev;
+            is $logs->[0]->{title}, 'GitWorks repository test - Failed';
             like $logs->[0]->{data}, qr{^cd \\/tmp\\/\S+ && make test 2>&1}m;
             like $logs->[0]->{data}, qr{^Exited with status 2}m;
             
@@ -55,7 +56,7 @@ test {
             undef $c;
         } $c;
     });
-} n => 9, wait => $mysql, name => 'failed (no rule)';
+} n => 10, wait => $mysql, name => 'failed (no rule)';
 
 test {
     my $c = shift;
@@ -91,12 +92,13 @@ test {
             is $logs->[0]->{sha}, $rev;
             like $logs->[0]->{data}, qr{^cd \\/tmp\\/\S+ && make test 2>&1}m;
             like $logs->[0]->{data}, qr{^Exited with status 0}m;
+            is $logs->[0]->{title}, 'GitWorks repository test - Succeeded';
             
             done $c;
             undef $c;
         } $c;
     });
-} n => 9, wait => $mysql, name => 'success';
+} n => 10, wait => $mysql, name => 'success';
 
 test {
     my $c = shift;
@@ -132,11 +134,12 @@ test {
             is $logs->[0]->{sha}, $rev;
             like $logs->[0]->{data}, qr{^cd \\/tmp\\/\S+ && make test 2>&1}m;
             like $logs->[0]->{data}, qr{^Exited with status 2}m;
+            is $logs->[0]->{title}, 'GitWorks repository test - Failed';
             
             done $c;
             undef $c;
         } $c;
     });
-} n => 9, wait => $mysql, name => 'failed (make failed)';
+} n => 10, wait => $mysql, name => 'failed (make failed)';
 
 run_tests;
