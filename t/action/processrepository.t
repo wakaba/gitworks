@@ -190,4 +190,44 @@ test {
     });
 } n => 7, name => 'cached repo';
 
+test {
+    my $c = shift;
+
+    my $temp_d = dir(tempdir(CLEANUP => 1));
+    system "cd $temp_d && git init && echo 'hoge:\n\techo 1234 > foo.txt' > Makefile && git add Makefile && git commit -m New";
+    my $rev = `cd $temp_d && git rev-parse HEAD`;
+
+    my $temp2_d = dir(tempdir(CLEANUP => 1));
+    system "cd $temp2_d && echo \"echo 5566 > foo.txt\" > hoge.sh";
+
+    my $cached_d = dir(tempdir(CLEANUP => 1));
+
+    my $job = {
+        repository_url => $temp_d->stringify,
+        repository_branch => 'master',
+        repository_revision => $rev,
+        action_type => 'command',
+        args => {
+            command => 'hoge',
+        },
+    };
+    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
+    $action->command_dir_d($temp2_d);
+    $action->run_action_as_cv->cb(sub {
+        test {
+            my $temp_d = $action->temp_repo_d;
+            undef $action;
+
+            my $watch; $watch = AE::timer 0.1, 0, sub {
+                test {
+                    ok !-d $temp_d;
+                    done $c;
+                    undef $c;
+                    undef $watch;
+                } $c;
+            };
+        } $c;
+    });
+} n => 1, name => 'temp directory deleted';
+
 run_tests;
