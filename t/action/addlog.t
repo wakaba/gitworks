@@ -76,4 +76,23 @@ test {
     };
 } n => 7, wait => $mysql_cv;
 
+test {
+    my $c = shift;
+
+    my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+    my $url = q<git://hoge/fuga>;
+    my $action = GW::Action::AddLog->new_from_dbreg_and_repository_url($dbreg, $url);
+    
+    my $sha = q<heaewe:gaegeee?fwagfeeea&ga#ggag4rrrrrr>;
+    my $return = $action->add_log(
+        sha => $sha,
+        branch => q<hhtrpfeaege>,
+        data => qq<afee\x{4e00}a/g?ageee xy#a>,
+    );
+
+    eq_or_diff $return, {logs_url => q</repos/logs?repository_url=git%3A%2F%2Fhoge%2Ffuga&sha=heaewe%3Agaegeee%3Ffwagfeeea%26ga%23ggag4rrrrrr>};
+
+    done $c;
+} n => 1, name => 'return', wait => $mysql_cv;
+
 run_tests;

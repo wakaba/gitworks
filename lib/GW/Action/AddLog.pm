@@ -3,6 +3,7 @@ use strict;
 use warnings;
 use Dongry::Type;
 use Time::HiRes qw(time);
+use URL::PercentEncode qw(percent_encode_c);
 
 sub new_from_dbreg_and_repository_url {
     return bless {dbreg => $_[1], repository_url => $_[2]}, $_[0];
@@ -32,14 +33,21 @@ sub add_log {
         $repo_id = $db->select('repository', {repository_url => $url}, field => 'id', source_name => 'master')->first->{id};
     }
 
+    my $sha = ($args{sha} || die "No sha");
     $self->dbreg->load('gitworkslogs')->insert('log', [{
         id => $db->bare_sql_fragment('UUID_SHORT()'),
         created => time,
         repository_id => $repo_id,
         repository_branch => defined $args{branch} ? $args{branch} : '',
-        sha => ($args{sha} || die "No sha"),
+        sha => $sha,
         data => Dongry::Type->serialize('text', defined $args{data} ? $args{data} : ''),
     }]);
+
+    return {
+        logs_url => (sprintf '/repos/logs?repository_url=%s&sha=%s',
+                         (percent_encode_c $url),
+                         (percent_encode_c $sha)),
+    };
 }
 
 1;

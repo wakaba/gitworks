@@ -8,6 +8,7 @@ use AnyEvent::Util;
 use List::Ish;
 use Encode;
 use Digest::SHA1 qw(sha1_hex);
+use GW::Defs::Statuses;
 
 my $DEBUG = $ENV{GW_DEBUG};
 
@@ -54,6 +55,16 @@ sub die_message {
     my ($self, $msg) = @_;
     $self->onmessage->($msg, die => 1);
     die $msg;
+}
+
+sub log_action {
+    require GW::Action::AddLog;
+    return $_[0]->{log_action} ||= GW::Action::AddLog->new_from_dbreg_and_repository_url($_[0]->dbreg, $_[0]->url);
+}
+
+sub commit_status_action {
+    require GW::Action::AddCommitStatus;
+    return $_[0]->{commit_status_action} ||= GW::Action::AddCommitStatus->new_from_dbreg_and_repository_url($_[0]->dbreg, $_[0]->url);
 }
 
 sub cached_repo_set_d {
@@ -188,6 +199,42 @@ sub get_command_f {
     return $self->command_dir_d->file($command . '.sh');
 }
 
+sub run_test_as_cv {
+    my $self = shift;
+    my $cv = AE::cv;
+    my $d = $self->temp_repo_d;
+    my $onmessage = $self->onmessage;
+    my $command = "cd \Q$d\E && make test 2>&1";
+    my $output = $command . "\n";
+    run_cmd(
+        $command,
+        '>' => sub {
+            if (defined $_[0]) {
+                $output .= $_[0];
+                $onmessage->($_[0]);
+            }
+        },
+    )->cb(sub {
+        my $return = $_[0]->recv;
+        my $failed = $return >> 8;
+        $output .= "Exited with status @{[$return >> 8]}\n";
+        
+        my $log_info = $self->log_action->add_log(
+            branch => $self->branch,
+            sha => $self->revision,
+            data => $output,
+        );
+        $self->commit_status_action->add_commit_status(
+            sha => $self->revision,
+            state => $failed ? COMMIT_STATUS_FAILURE : COMMIT_STATUS_SUCCESS,
+            target_url => $log_info->{logs_url},
+            description => 'GitWorks repository test - ' . ($failed ? 'Failed' : 'Succeeded'),
+        );
+        $cv->send;
+    });
+    return $cv;
+}
+
 sub run_action_as_cv {
     my $self = shift;
     my $action = $self->{job}->{action_type};
@@ -232,6 +279,8 @@ sub run_action_as_cv {
                 warn "Command |$command| (@{[$self->get_command_f($command)]}) is not defined";
                 $cv->send;
             }
+        } elsif ($action eq 'run-test') {
+            $self->run_test_as_cv->cb(sub { $cv->send });
         } else {
             warn "Action |$action| is not supported";
             $cv->send;
