@@ -201,9 +201,9 @@ sub process {
                 } }));
                 return $app->throw;
             }
-        } elsif (defined $path->[1] and $path->[1] eq 'branches' and
+        } elsif (defined $path->[1] and $path->[1] eq 'branches.json' and
                  not defined $path->[2]) {
-            # /repos/tags
+            # /repos/branches.json
             $class->auth($app, 1);
             require GW::Action::ProcessRepository;
             my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d({repository_url => $url}, $cached_d);
@@ -211,9 +211,9 @@ sub process {
                 $app->send_json($_[0]->recv->map(sub { return {name => $_->[1], commit => {sha => $_->[0]}} }));
             });
             return $app->throw;
-        } elsif (defined $path->[1] and $path->[1] eq 'tags' and
+        } elsif (defined $path->[1] and $path->[1] eq 'tags.json' and
                  not defined $path->[2]) {
-            # /repos/tags
+            # /repos/tags.json
             $class->auth($app, 1);
             require GW::Action::ProcessRepository;
             my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d({repository_url => $url}, $cached_d);

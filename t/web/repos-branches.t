@@ -18,7 +18,7 @@ test {
     chomp $rev;
 
     http_get
-        url => qq<http://$host/repos/branches>,
+        url => qq<http://$host/repos/branches.json>,
         basic_auth => [api_key => 'testapikey'],
         params => {
             repository_url => $temp_d,

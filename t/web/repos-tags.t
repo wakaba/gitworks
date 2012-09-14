@@ -18,7 +18,7 @@ test {
     chomp $rev;
 
     http_get
-        url => qq<http://$host/repos/tags>,
+        url => qq<http://$host/repos/tags.json>,
         basic_auth => [api_key => 'testapikey'],
         params => {
             repository_url => $temp_d,
