@@ -8,6 +8,6 @@
 
 <ul>
   <t:for as=$url x="[keys %$urls]">
-    <li><a pl:href="'/hogehoge?' . percent_encode_c $url"><t:text value="$url"></a>
+    <li><a pl:href="'/repos?repository_url=' . percent_encode_c $url"><t:text value="$url"></a>
   </t:for>
 </ul>

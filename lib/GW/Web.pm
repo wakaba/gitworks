@@ -8,7 +8,6 @@ use MIME::Base64 qw(decode_base64);
 use GW::Warabe::App;
 
 our $APIKey;
-my $templates_d = file(__FILE__)->dir->parent->parent->resolve->subdir('templates');
 
 sub load_api_key_by_env {
     my $file_name = $ENV{GW_API_KEY_FILE_NAME}
@@ -102,28 +101,30 @@ sub process {
             if ($is_json) {
                 return $app->send_json([keys %{$loader->get_repository_urls}]);
             } else {
-                my $http = $app->http;
-                $http->response_mime_type->set_value('text/html');
-                $http->response_mime_type->set_param(charset => 'utf-8');
-                my $fh = GW::Web::Printer->new_from_http($http);
-                require Temma;
-                Temma->process_html(
-                    $templates_d->file('sets.html.tm'), {
+                return $class->process_temma(
+                    $app, ['sets.html.tm'], {
                         set_name => $set_name,
                         urls => $loader->get_repository_urls,
-                    } => $fh, sub { $http->close_response_body },
+                    },
                 );
-                return $app->throw;
             }
         }
     } elsif ($path->[0] eq 'repos') {
-        $class->auth($app, 1);
         my $url = $app->bare_param('repository_url')
             or $app->throw_error(400, reason_phrase => 'No repository_url');
-        if (defined $path->[1] and $path->[1] eq 'statuses' and
-            defined $path->[2] and $path->[2] =~ /.\.json\z/ and
-            not defined $path->[3]) {
+        if (not defined $path->[1]) {
+            # /repos?repository_url={url}
+            $class->auth($app, 0);
+            return $class->process_temma(
+                $app, ['repos.index.html.tm'], {
+                    repository_url => $url,
+                },
+            );
+        } elsif (defined $path->[1] and $path->[1] eq 'statuses' and
+                 defined $path->[2] and $path->[2] =~ /.\.json\z/ and
+                 not defined $path->[3]) {
             # /repos/statuses/{sha}.json
+            $class->auth($app, 1);
 
             # <http://developer.github.com/v3/repos/statuses/>
             # <https://github.com/blog/1227-commit-status-api>
@@ -169,6 +170,7 @@ sub process {
         } elsif (defined $path->[1] and $path->[1] eq 'logs.json' and
                  not defined $path->[2]) {
             # /repos/logs.json
+            $class->auth($app, 1);
             if ($app->http->request_method eq 'POST') {
                 require GW::Action::AddLog;
                 my $action = GW::Action::AddLog->new_from_dbreg_and_repository_url($reg, $url);
@@ -202,6 +204,7 @@ sub process {
         } elsif (defined $path->[1] and $path->[1] eq 'branches' and
                  not defined $path->[2]) {
             # /repos/tags
+            $class->auth($app, 1);
             require GW::Action::ProcessRepository;
             my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d({repository_url => $url}, $cached_d);
             $action->get_branches_as_cv->cb(sub {
@@ -211,6 +214,7 @@ sub process {
         } elsif (defined $path->[1] and $path->[1] eq 'tags' and
                  not defined $path->[2]) {
             # /repos/tags
+            $class->auth($app, 1);
             require GW::Action::ProcessRepository;
             my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d({repository_url => $url}, $cached_d);
             $action->get_tags_as_cv->cb(sub {
@@ -245,6 +249,22 @@ sub process {
     }
 
     return $app->throw_error(404);
+}
+
+my $templates_d = file(__FILE__)->dir->parent->parent->resolve->subdir('templates');
+
+sub process_temma {
+    my ($class, $app, $template_path, $args) = @_;
+    my $http = $app->http;
+    $http->response_mime_type->set_value('text/html');
+    $http->response_mime_type->set_param(charset => 'utf-8');
+    my $fh = GW::Web::Printer->new_from_http($http);
+    require Temma;
+    Temma->process_html(
+        $templates_d->file(@$template_path), $args => $fh,
+        sub { $http->close_response_body },
+    );
+    return $app->throw;
 }
 
 package GW::Web::Printer;
