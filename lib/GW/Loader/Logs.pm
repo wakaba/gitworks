@@ -39,6 +39,7 @@ sub get_logs {
         limit => $self->per_page,
     )->all->map(sub {
         $_->{data} = Dongry::Type->parse('text', $_->{data});
+        $_->{title} = Dongry::Type->parse('text', $_->{title});
         $_->{branch} = delete $_->{repository_branch};
         $_->{branch} = undef unless length $_->{branch};
         $_;

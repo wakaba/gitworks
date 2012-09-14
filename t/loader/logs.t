@@ -43,6 +43,7 @@ test {
         sha => $sha,
         branch => q<hhtrpfeaege>,
         data => qq<afee\x{4e00}agageee xya>,
+        title => '',
     };
 
     my $cv2 = AE::cv;
@@ -66,11 +67,13 @@ test {
                 sha => $sha,
                 branch => q<hhtrpfeaege>,
                 data => qq<afee\x{4e00}agageee xya>,
+                title => '',
             };
             eq_or_diff $list->[0], {
                 sha => $sha,
                 branch => undef,
                 data => '',
+                title => '',
             };
 
             $cv2->send;
@@ -83,7 +86,7 @@ test {
             is $list->length, 1;
             is $list->[0]->{sha}, $sha;
 
-            my $list = $loader->get_logs;
+            $list = $loader->get_logs;
             is $list->length, 2;
 
             done $c;

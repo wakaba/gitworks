@@ -4,6 +4,7 @@ CREATE TABLE log (
   repository_id BIGINT UNSIGNED NOT NULL,
   repository_branch VARBINARY(511) NOT NULL,
   sha VARBINARY(40) NOT NULL,
+  title VARBINARY(511) NOT NULL,
   `data` MEDIUMBLOB NOT NULL,
   PRIMARY KEY (id),
   KEY (created),

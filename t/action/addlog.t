@@ -24,6 +24,7 @@ test {
         sha => $sha,
         branch => q<hhtrpfeaege>,
         data => qq<afee\x{4e00}agageee xya>,
+        title => "\x{5000}",
     );
 
     delete $dbreg->{Instances};
@@ -41,6 +42,7 @@ test {
         sha => $sha,
         branch => q<hhtrpfeaege>,
         data => qq<afee\x{4e00}agageee xya>,
+        title => "\x{5000}",
     };
 
     my $timer; $timer = AE::timer 1, 0, sub {
@@ -63,11 +65,13 @@ test {
                 sha => $sha,
                 branch => q<hhtrpfeaege>,
                 data => qq<afee\x{4e00}agageee xya>,
+                title => "\x{5000}",
             };
             eq_or_diff $list->[0], {
                 sha => $sha,
                 branch => undef,
                 data => '',
+                title => '',
             };
 
             $c->done;

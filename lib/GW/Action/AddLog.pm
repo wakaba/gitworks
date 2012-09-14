@@ -40,6 +40,7 @@ sub add_log {
         repository_id => $repo_id,
         repository_branch => defined $args{branch} ? $args{branch} : '',
         sha => $sha,
+        title => Dongry::Type->serialize('text', defined $args{title} ? $args{title} : ''),
         data => Dongry::Type->serialize('text', defined $args{data} ? $args{data} : ''),
     }]);
 
