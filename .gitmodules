@@ -34,3 +34,6 @@
 [submodule "modules/manakai"]
 	path = modules/manakai
 	url = git://github.com/wakaba/manakai.git
+[submodule "modules/vcutils"]
+	path = modules/vcutils
+	url = git://github.com/wakaba/perl-vcutils.git
