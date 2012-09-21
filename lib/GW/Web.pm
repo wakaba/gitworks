@@ -120,6 +120,24 @@ sub process {
                     repository_url => $url,
                 },
             );
+        } elsif (defined $path->[1] and $path->[1] eq 'git' and
+                 defined $path->[2] and $path->[2] eq 'commits' and
+                 defined $path->[3] and $path->[3] =~ /.\.json\z/ and
+                 not defined $path->[4]) {
+            # /repos/git/commits/{sha}.json
+            $class->auth($app, 1);
+            
+            my $sha = $path->[3];
+            $sha =~ s/\.json\z//;
+            my $action = $class->process_repository_action($url, $cached_d);
+            require GW::Loader::Commits;
+            my $loader = GW::Loader::Commits->new_from_process_repository_action($action);
+            $loader->get_commit_as_github_jsonable_as_cv($sha)->cb(sub {
+                my $json = $_[0]->recv
+                    or $app->throw_error(404, reason_phrase => 'Commit not found');
+                $app->send_json($json);
+            });
+            return $app->throw;
         } elsif (defined $path->[1] and $path->[1] eq 'statuses' and
                  defined $path->[2] and $path->[2] =~ /.\.json\z/ and
                  not defined $path->[3]) {
@@ -205,8 +223,7 @@ sub process {
                  not defined $path->[2]) {
             # /repos/branches.json
             $class->auth($app, 1);
-            require GW::Action::ProcessRepository;
-            my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d({repository_url => $url}, $cached_d);
+            my $action = $class->process_repository_action($url, $cached_d);
             $action->get_branches_as_cv->cb(sub {
                 $app->send_json($_[0]->recv->map(sub { return {name => $_->[1], commit => {sha => $_->[0]}} }));
             });
@@ -215,8 +232,7 @@ sub process {
                  not defined $path->[2]) {
             # /repos/tags.json
             $class->auth($app, 1);
-            require GW::Action::ProcessRepository;
-            my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d({repository_url => $url}, $cached_d);
+            my $action = $class->process_repository_action($url, $cached_d);
             $action->get_tags_as_cv->cb(sub {
                 $app->send_json($_[0]->recv->map(sub { return {name => $_->[1], commit => {sha => $_->[0]}} }));
             });
@@ -249,6 +265,12 @@ sub process {
     }
 
     return $app->throw_error(404);
+}
+
+sub process_repository_action {
+    my (undef, $url, $cached_d) = @_;
+    require GW::Action::ProcessRepository;
+    return GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d({repository_url => $url}, $cached_d);
 }
 
 my $templates_d = file(__FILE__)->dir->parent->parent->resolve->subdir('templates');
