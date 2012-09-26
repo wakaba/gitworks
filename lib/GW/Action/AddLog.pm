@@ -34,8 +34,9 @@ sub add_log {
     }
 
     my $sha = ($args{sha} || die "No sha");
+    my $id = $db->execute('SELECT UUID_SHORT() AS uuid')->first->{uuid};
     $self->dbreg->load('gitworkslogs')->insert('log', [{
-        id => $db->bare_sql_fragment('UUID_SHORT()'),
+        id => $id,
         created => time,
         repository_id => $repo_id,
         repository_branch => defined $args{branch} ? $args{branch} : '',
@@ -45,9 +46,11 @@ sub add_log {
     }]);
 
     return {
-        logs_url => (sprintf '/repos/logs?repository_url=%s&sha=%s',
+        log_id => $id,
+        logs_url => (sprintf '/repos/logs?repository_url=%s&sha=%s#log-%s',
                          (percent_encode_c $url),
-                         (percent_encode_c $sha)),
+                         (percent_encode_c $sha),
+                         (percent_encode_c $id)),
     };
 }
 

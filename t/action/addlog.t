@@ -94,9 +94,13 @@ test {
         data => qq<afee\x{4e00}a/g?ageee xy#a>,
     );
 
-    eq_or_diff $return, {logs_url => q</repos/logs?repository_url=git%3A%2F%2Fhoge%2Ffuga&sha=heaewe%3Agaegeee%3Ffwagfeeea%26ga%23ggag4rrrrrr>};
+    ok $return->{log_id};
+    eq_or_diff $return, {
+        log_id => $return->{log_id},
+        logs_url => q</repos/logs?repository_url=git%3A%2F%2Fhoge%2Ffuga&sha=heaewe%3Agaegeee%3Ffwagfeeea%26ga%23ggag4rrrrrr#log-> . $return->{log_id},
+    };
 
     done $c;
-} n => 1, name => 'return', wait => $mysql_cv;
+} n => 2, name => 'return', wait => $mysql_cv;
 
 run_tests;

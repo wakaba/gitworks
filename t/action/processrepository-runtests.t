@@ -40,7 +40,8 @@ test {
             my $cses = $cs_loader->get_commit_statuses($rev);
             is $cses->length, 1;
             is $cses->[0]->{sha}, $rev;
-            is $cses->[0]->{target_url}, '/repos/logs?repository_url=' . (percent_encode_c $temp_d) . '&sha=' . $rev;
+            $cses->[0]->{target_url} =~ s/log-\d+$/log-hoge/;
+            is $cses->[0]->{target_url}, '/repos/logs?repository_url=' . (percent_encode_c $temp_d) . '&sha=' . $rev . '#log-hoge';
             is $cses->[0]->{description}, 'GitWorks repository test - Failed';
             is $cses->[0]->{state}, COMMIT_STATUS_FAILURE;
 
@@ -82,7 +83,8 @@ test {
             my $cses = $cs_loader->get_commit_statuses($rev);
             is $cses->length, 1;
             is $cses->[0]->{sha}, $rev;
-            is $cses->[0]->{target_url}, '/repos/logs?repository_url=' . (percent_encode_c $temp_d) . '&sha=' . $rev;
+            $cses->[0]->{target_url} =~ s/log-\d+$/log-hoge/;
+            is $cses->[0]->{target_url}, '/repos/logs?repository_url=' . (percent_encode_c $temp_d) . '&sha=' . $rev . '#log-hoge';
             is $cses->[0]->{description}, 'GitWorks repository test - Succeeded';
             is $cses->[0]->{state}, COMMIT_STATUS_SUCCESS;
 
@@ -124,7 +126,8 @@ test {
             my $cses = $cs_loader->get_commit_statuses($rev);
             is $cses->length, 1;
             is $cses->[0]->{sha}, $rev;
-            is $cses->[0]->{target_url}, '/repos/logs?repository_url=' . (percent_encode_c $temp_d) . '&sha=' . $rev;
+            $cses->[0]->{target_url} =~ s/log-\d+$/log-hoge/;
+            is $cses->[0]->{target_url}, '/repos/logs?repository_url=' . (percent_encode_c $temp_d) . '&sha=' . $rev . '#log-hoge';
             is $cses->[0]->{description}, 'GitWorks repository test - Failed';
             is $cses->[0]->{state}, COMMIT_STATUS_FAILURE;
 
