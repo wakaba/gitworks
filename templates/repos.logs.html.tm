@@ -24,8 +24,8 @@ sub _datetime ($) {
         (<a href="'/repos/git/commits/' . (percent_encode_c $log->{branch}) . '?repository_url=' . (percent_encode_c $repository_url)"><t:text value="$log->{branch}"></a>)
       <dt>Date
       <dd><time><t:text value="_datetime $log->{created}"></time>
-      <dt>Commit log
-      <dd><pre><t:text value="$commit->{data}"></pre>
+      <dt>Data
+      <dd><pre><t:text value="$log->{data}"></pre>
     </dl>
   </article>
 </t:for>
