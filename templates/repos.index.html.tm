@@ -45,7 +45,7 @@
       li.innerHTML = template;
       li.querySelector('.ref-name').textContent = entry.name;
       li.querySelector('.sha').textContent = entry.commit.sha.substring(0, 10);
-      li.querySelector('.link').href = 'XXX/' + encodeURIComponent(entry.commit.sha) + '?repository_url=' + encodeURIComponent(repoURL);
+      li.querySelector('.link').href = '/repos/commits.json?sha=' + encodeURIComponent(entry.commit.sha) + '&repository_url=' + encodeURIComponent(repoURL);
       ul.appendChild(li);
     }
   }, function () {
@@ -65,7 +65,7 @@
       li.innerHTML = template;
       li.querySelector('.ref-name').textContent = entry.name;
       li.querySelector('.sha').textContent = entry.commit.sha.substring(0, 10);
-      li.querySelector('.link').href = 'XXX/' + encodeURIComponent(entry.commit.sha) + '?repository_url=' + encodeURIComponent(repoURL);
+      li.querySelector('.link').href = '/repos/commits.json?sha=' + encodeURIComponent(entry.commit.sha) + '&repository_url=' + encodeURIComponent(repoURL);
       ul.appendChild(li);
     }
   }, function () {

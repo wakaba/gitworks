@@ -144,6 +144,34 @@ test {
     my $rev2 = `cd $temp_d && git rev-parse HEAD`;
     chomp $rev2;
 
+    my $cv = AE::cv;
+    $cv->begin(sub {
+        test {
+            done $c;
+            undef $c;
+        } $c;
+    });
+
+    $cv->begin;
+    http_get
+        url => qq<http://$host/repos/commits>,
+        basic_auth => [develop => 'testapikey'],
+        params => {
+            repository_url => $temp_d,
+            sha => $rev,
+        },
+        anyevent => 1,
+        cb => sub {
+            my ($req, $res) = @_;
+            test {
+                is $res->code, 200;
+                is $res->content_type, q{text/html};
+                like $res->content, qr{\Q$rev\E};
+                $cv->end;
+            } $c;
+        };
+
+    $cv->begin;
     http_get
         url => qq<http://$host/repos/commits.json>,
         basic_auth => [api_key => 'testapikey'],
@@ -163,10 +191,10 @@ test {
                 ok $json->[0]->{committer}->{name};
                 is $json->[0]->{message}, q{New};
                 eq_or_diff $json->[0]->{parents}, [];
-                done $c;
-                undef $c;
+                $cv->end;
             } $c;
         };
-} n => 7, wait => $server, name => 'found, rev specified';
+    $cv->end;
+} n => 10, wait => $server, name => 'found, rev specified';
 
 run_tests;

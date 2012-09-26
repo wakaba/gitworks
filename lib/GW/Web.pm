@@ -32,7 +32,8 @@ sub psgi_app {
 sub auth {
     my (undef, $app, $is_api) = @_;
     if ($is_api) {
-        $app->requires_basic_auth({api_key => $APIKey}, realm => 'API');
+        $app->requires_basic_auth({api_key => $APIKey,
+                                   develop => $APIKey}, realm => 'Pages');
     } else {
         $app->requires_basic_auth({develop => $APIKey}, realm => 'Pages');
     }
@@ -101,12 +102,13 @@ sub process {
             if ($is_json) {
                 return $app->send_json([keys %{$loader->get_repository_urls}]);
             } else {
-                return $class->process_temma(
+                $class->process_temma(
                     $app, ['sets.html.tm'], {
                         set_name => $set_name,
                         urls => $loader->get_repository_urls,
                     },
                 );
+                return $app->throw;
             }
         }
     } elsif ($path->[0] eq 'repos') {
@@ -115,11 +117,12 @@ sub process {
         if (not defined $path->[1]) {
             # /repos?repository_url={url}
             $class->auth($app, 0);
-            return $class->process_temma(
+            $class->process_temma(
                 $app, ['repos.index.html.tm'], {
                     repository_url => $url,
                 },
             );
+            return $app->throw;
         } elsif (defined $path->[1] and $path->[1] eq 'git' and
                  defined $path->[2] and $path->[2] eq 'commits' and
                  defined $path->[3] and $path->[3] =~ /.\.json\z/ and
@@ -141,10 +144,12 @@ sub process {
                 }
             });
             return $app->throw;
-        } elsif (defined $path->[1] and $path->[1] eq 'commits.json' and
+        } elsif (defined $path->[1] and
+                 ($path->[1] eq 'commits' or $path->[1] eq 'commits.json') and
                  not defined $path->[2]) {
+            # /repos/commits
             # /repos/commits.json
-            $class->auth($app, 1);
+            $class->auth($app, $path->[1] =~ /\.json$/);
 
             # <http://developer.github.com/v3/repos/commits/#list-commits-on-a-repository>
 
@@ -155,7 +160,16 @@ sub process {
             $loader->get_commit_list_as_github_jsonable_as_cv($sha)->cb(sub {
                 my $json = $_[0]->recv;
                 if ($json) {
-                    $app->send_json($json);
+                    if ($path->[1] eq 'commits.json') {
+                        $app->send_json($json);
+                    } else {
+                        $class->process_temma(
+                            $app, ['repos.commits.html.tm'], {
+                                repository_url => $url,
+                                commits => $json,
+                            },
+                        );
+                    }
                 } else {
                     $app->send_error(404, reason_phrase => 'Commit not found');
                 }
@@ -310,7 +324,6 @@ sub process_temma {
         $templates_d->file(@$template_path), $args => $fh,
         sub { $http->close_response_body },
     );
-    return $app->throw;
 }
 
 package GW::Web::Printer;
