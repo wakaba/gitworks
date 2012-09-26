@@ -228,11 +228,14 @@ sub process {
                 }));
                 return $app->throw;
             }
-        } elsif (defined $path->[1] and $path->[1] eq 'logs.json' and
+        } elsif (defined $path->[1] and
+                 ($path->[1] eq 'logs' or $path->[1] eq 'logs.json') and
                  not defined $path->[2]) {
+            # /repos/logs
             # /repos/logs.json
-            $class->auth($app, 1);
-            if ($app->http->request_method eq 'POST') {
+            $class->auth($app, $path->[1] =~ /\.json$/);
+            if ($app->http->request_method eq 'POST' and
+                $path->[1] eq 'logs.json') {
                 require GW::Action::AddLog;
                 my $action = GW::Action::AddLog->new_from_dbreg_and_repository_url($reg, $url);
                 my $sha = $app->bare_param('sha')
@@ -253,13 +256,22 @@ sub process {
                     sha => $app->bare_param('sha'),
                     branch => $app->bare_param('branch'),
                 );
-                $app->send_json($list->map(sub { return {
-                    id => $_->{id},
-                    branch => $_->{branch},
-                    sha => $_->{sha},
-                    data => $_->{data},
-                    created => $_->{created},
-                } }));
+                if ($path->[1] eq 'logs.json') {
+                    $app->send_json($list->map(sub { return {
+                        id => $_->{id},
+                        branch => $_->{branch},
+                        sha => $_->{sha},
+                        data => $_->{data},
+                        created => $_->{created},
+                    } }));
+                } else {
+                    $class->process_temma(
+                        $app, ['repos.logs.html.tm'], {
+                            repository_url => $url,
+                            logs => $list,
+                        },
+                    );
+                }
                 return $app->throw;
             }
         } elsif (defined $path->[1] and $path->[1] eq 'branches.json' and

@@ -23,12 +23,33 @@ test {
         cb => sub {
             my ($req, $res) = @_;
             test {
-                is $res->code, 401;
+                is $res->code, 400;
                 done $c;
                 undef $c;
             } $c;
         };
 } n => 1, wait => $server, name => 'get no repository_url no auth';
+
+test {
+    my $c = shift;
+    my $host = $c->received_data->web_host;
+
+    my $sha = q<aabbr425gaaaaaaaaa>;
+    http_get
+        url => qq<http://$host/repos/logs>,
+        params => {
+            sha => $sha,
+        },
+        anyevent => 1,
+        cb => sub {
+            my ($req, $res) = @_;
+            test {
+                is $res->code, 400;
+                done $c;
+                undef $c;
+            } $c;
+        };
+} n => 1, wait => $server, name => 'get no repository_url no auth html';
 
 test {
     my $c = shift;
@@ -79,6 +100,28 @@ test {
     my $host = $c->received_data->web_host;
 
     my $url = q<htfaefeafeeeafafee/fefea/e.gfee?a>;
+    http_get
+        url => qq<http://$host/repos/logs/>,
+        basic_auth => [api_key => 'testapikey'],
+        params => {
+            repository_url => $url,
+        },
+        anyevent => 1,
+        cb => sub {
+            my ($req, $res) = @_;
+            test {
+                is $res->code, 404;
+                done $c;
+                undef $c;
+            } $c;
+        };
+} n => 1, wait => $server, name => 'get bad sha html';
+
+test {
+    my $c = shift;
+    my $host = $c->received_data->web_host;
+
+    my $url = q<htfaefeafeeeafafee/fefea/e.gfee?a>;
     my $sha = q<aabbr425gaaaaaaaaa>;
     http_get
         url => qq<http://$host/repos/logs.json>,
@@ -105,7 +148,7 @@ test {
     my $host = $c->received_data->web_host;
 
     my $url = q<htfaefeafeeeafafee/fefea/e.gfee?a>;
-    my $sha = q<aabbr425gaaaaaaaaage>;
+    my $sha = q<aabbr425gaaaaaaaaa55>;
 
     my $cv1 = AE::cv;
     http_post
@@ -299,6 +342,23 @@ test {
 
             $cv4->begin;
             http_get
+                url => qq<http://$host/repos/logs>,
+                basic_auth => [develop => 'testapikey'],
+                params => {
+                    repository_url => $url,
+                },
+                anyevent => 1,
+                cb => sub {
+                    my ($req, $res) = @_;
+                    test {
+                        is $res->code, 200;
+                        like $res->content, qr[\Q$sha\E];
+                        $cv4->end;
+                    } $c;
+                };
+
+            $cv4->begin;
+            http_get
                 url => qq<http://$host/repos/logs.json>,
                 basic_auth => [api_key => 'testapikey'],
                 params => {
@@ -335,6 +395,24 @@ test {
                     } $c;
                 };
 
+            $cv4->begin;
+            http_get
+                url => qq<http://$host/repos/logs>,
+                basic_auth => [develop => 'testapikey'],
+                params => {
+                    repository_url => $url,
+                    branch => q<hrr grg aega abc>,
+                },
+                anyevent => 1,
+                cb => sub {
+                    my ($req, $res) = @_;
+                    test {
+                        is $res->code, 200;
+                        is $res->content_type, q{text/html};
+                        $cv4->end;
+                    } $c;
+                };
+
             $cv4->end;
         } $c;
     });
@@ -345,6 +423,6 @@ test {
             undef $c;
         } $c;
     });
-} n => 20, wait => $server, name => 'post / get';
+} n => 24, wait => $server, name => 'post / get';
 
 run_tests;
