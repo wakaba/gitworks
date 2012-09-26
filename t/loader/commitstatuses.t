@@ -15,7 +15,7 @@ test {
     my $c = shift;
 
     my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
-    my $url = q<git://hoge/fuga>;
+    my $url = q<git://hoge/fuga> . rand;
 
     my $loader = GW::Loader::CommitStatuses->new_from_dbreg_and_repository_url($dbreg, $url);
     eq_or_diff $loader->get_commit_statuses('aageeee')->to_a, [];
@@ -83,6 +83,63 @@ test {
             undef $c;
         } $c;
     };
-} n => 8, wait => $mysql_cv;
+} n => 8, wait => $mysql_cv, name => 'single';
+
+test {
+    my $c = shift;
+
+    my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+    my $url = q<git://hoge/fuga> . rand;
+
+    my $loader = GW::Loader::CommitStatuses->new_from_dbreg_and_repository_url($dbreg, $url);
+
+    my $action = GW::Action::AddCommitStatus->new_from_dbreg_and_repository_url($dbreg, $url);
+    
+    my $sha = q<heaewegaegeeefwagfeeeagaggag4rrrrrr>;
+    my $sha2 = q<heaewegaegeeefwagfeee4aggag4rr452r>;
+
+    eq_or_diff $loader->get_commit_statuses_list([$sha, $sha2]), {};
+
+    $action->add_commit_status(
+        sha => $sha,
+        state => 4,
+        target_url => q<hhtrpfeaege>,
+        description => qq<afee\x{4e00}agageee xya>,
+    );
+    $action->add_commit_status(
+        sha => $sha2,
+        state => 3,
+        target_url => q<hhtrpfeaege12>,
+        description => qq<afee\x{4e00}agageee>,
+    );
+
+    my $result = $loader->get_commit_statuses_list([$sha, $sha2]);
+    eq_or_diff {map { $_ => 1 } keys %$result}, {$sha => 1, $sha2 => 1};
+    
+    is $result->{$sha}->length, 1;
+    is $result->{$sha2}->length, 1;
+    
+    delete $result->{$sha}->[0]->{id};
+    delete $result->{$sha}->[0]->{created};
+    delete $result->{$sha}->[0]->{repository_id};
+    eq_or_diff $result->{$sha}->[0], {
+        sha => $sha,
+        state => 4,
+        target_url => q<hhtrpfeaege>,
+        description => qq<afee\x{4e00}agageee xya>,
+    };
+
+    delete $result->{$sha2}->[0]->{id};
+    delete $result->{$sha2}->[0]->{created};
+    delete $result->{$sha2}->[0]->{repository_id};
+    eq_or_diff $result->{$sha2}->[0], {
+        sha => $sha2,
+        state => 3,
+        target_url => q<hhtrpfeaege12>,
+        description => qq<afee\x{4e00}agageee>,
+    };
+
+    done $c;
+} n => 6, wait => $mysql_cv, name => 'multiple';
 
 run_tests;

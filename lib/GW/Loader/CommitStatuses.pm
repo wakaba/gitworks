@@ -35,4 +35,26 @@ sub get_commit_statuses {
     });
 }
 
+sub get_commit_statuses_list {
+    my ($self, $sha_list) = @_;
+    return {} unless @$sha_list;
+    
+    my $db = $self->dbreg->load('gitworks');
+    my $repo_id = ($db->select('repository', {repository_url => $self->repository_url})->first or {})->{id}
+        or return {};
+
+    my $result = {};
+    $db->select(
+        'commit_status',
+        {repository_id => $repo_id, sha => {-in => $sha_list}},
+        order => ['created' => 'DESC'],
+    )->all->each(sub {
+        $_->{description} = Dongry::Type->parse('text', $_->{description});
+        $_->{description} = undef unless length $_->{description};
+        $_->{target_url} = undef unless length $_->{target_url};
+        ($result->{$_->{sha}} ||= List::Ish->new)->push($_);
+    });
+    return $result;
+}
+
 1;

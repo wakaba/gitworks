@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html t:params="$repository_url $commits">
+<html t:params="$repository_url $commits $commit_statuses">
 <t:call x="use URL::PercentEncode qw(percent_encode_c)">
+<t:call x="use GW::Defs::Statuses">
 <title t:parse>Commits &mdash; <t:text value=$repository_url></title>
 
 <h1><code><t:text value=$repository_url></code></h1>
@@ -19,6 +20,16 @@
       <dd><time><t:text value="$commit->{author}->{date}"></time>
       <dt>Commit log
       <dd><t:text value="$commit->{message}">
+
+      <t:my as=$commit_status x="$commit_statuses->{$commit->{sha}}">
+      <t:if x=$commit_status>
+        <dt>Status
+        <t:for as=$status x="$commit_status">
+          <dd pl:id="'commit-status-' . $status->{id}">
+            <a pl:href="$status->{target_url}"><t:text value="$GW::Defs::Statuses::CommitStatusCodeToName->{$status->{state}}"></a>:
+            <t:text value="$status->{description}">
+        </f:for>
+      </t:if>
     </dl>
   </article>
 </t:for>

@@ -163,10 +163,15 @@ sub process {
                     if ($path->[1] eq 'commits.json') {
                         $app->send_json($json);
                     } else {
+                        require GW::Loader::CommitStatuses;
+                        my $loader = GW::Loader::CommitStatuses->new_from_dbreg_and_repository_url($reg, $url);
+                        my $statuses = $loader->get_commit_statuses_list([map { $_->{sha} } @$json]);
+                        
                         $class->process_temma(
                             $app, ['repos.commits.html.tm'], {
                                 repository_url => $url,
                                 commits => $json,
+                                commit_statuses => $statuses,
                             },
                         );
                     }
