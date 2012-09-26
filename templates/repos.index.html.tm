@@ -15,7 +15,7 @@
   "></ul>
 
   <dt>Tags
-  <dd><ul id=list-logs data-template="
+  <dd><ul id=list-tags data-template="
     <a href class=link-ref-name><code class=ref-name></code></a> <a href class=link-sha><code class=sha></code></a>
   "></ul>
 </dl>
