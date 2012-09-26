@@ -20,7 +20,7 @@ test {
         cb => sub {
             my ($req, $res) = @_;
             test {
-                is $res->code, 401;
+                is $res->code, 400;
                 done $c;
                 undef $c;
             } $c;

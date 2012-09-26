@@ -66,7 +66,7 @@ test {
             test {
                 is $res->code, 200;
                 is $res->header('Content-Type'), 'text/html; charset=utf-8';
-                like $res->content, qr{/repos/branches\?repository_url=aabbr425gaaaaa%3F%3Aaaaa};
+                like $res->content, qr{data-repository-url="\Q$url\E"};
                 like $res->content, qr{</html>};
                 #warn $res->content;
                 done $c;
