@@ -40,6 +40,7 @@ PROVE = prove
 test: test-deps test-main
 
 test-deps: deps
+	cd modules/rdb-utils && $(MAKE) deps
 
 test-main:
 	$(PERL_ENV) $(PROVE) \
