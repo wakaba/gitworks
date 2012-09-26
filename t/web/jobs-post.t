@@ -164,7 +164,7 @@ test {
 
     my $cv2 = AE::cv;
     $cv1->cb(sub {
-        my $timer; $timer = AE::timer 7, 0, sub {
+        my $timer; $timer = AE::timer 14, 0, sub {
             test {
                 undef $timer;
                 $cv2->send;
@@ -223,7 +223,7 @@ test {
 
     my $cv2 = AE::cv;
     $cv1->cb(sub {
-        my $timer; $timer = AE::timer 7, 0, sub {
+        my $timer; $timer = AE::timer 14, 0, sub {
             test {
                 undef $timer;
                 $cv2->send;
