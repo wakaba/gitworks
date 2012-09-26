@@ -208,6 +208,26 @@ sub get_commit_info_as_cv {
     return $cv;
 }
 
+sub get_commit_info_list_as_cv {
+    my ($self, $sha) = @_;
+    my $cv = AE::cv;
+    $self->prepare_cached_repo_d_as_cv->cb(sub {
+        my $result = '';
+        $self->git_as_cv(
+            ['log', '--raw', '--format=raw', $sha],
+            d => $self->cached_repo_d,
+            onstdout => \$result,
+        )->cb(sub {
+            require Git::Parser::Log;
+            my $parsed = (defined $result and length $result)
+                ? Git::Parser::Log->parse_format_raw($result)->{commits}
+                : undef;
+            $cv->send($parsed);
+        });
+    });
+    return $cv;
+}
+
 sub command_dir_d {
     if (@_ > 1) {
         $_[0]->{command_dir_d} = $_[1];

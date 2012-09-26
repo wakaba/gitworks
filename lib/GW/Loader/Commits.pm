@@ -18,6 +18,36 @@ sub _datetime ($) {
         $time[5] + 1900, $time[4] + 1, $time[3], $time[2], $time[1], $time[0];
 }
 
+sub internal_to_github_jsonable {
+    my ($self, $info) = @_;
+    # <http://developer.github.com/v3/git/commits/#get-a-commit>
+    return {
+        sha => $info->{commit},
+        #url
+        author => {
+            date => _datetime $info->{author}->{time},
+            name => $info->{author}->{name},
+            email => $info->{author}->{mail},
+        },
+        committer => {
+            date => _datetime $info->{committer}->{time},
+            name => $info->{committer}->{name},
+            email => $info->{committer}->{mail},
+        },
+        message => $info->{body},
+        tree => {
+            #url
+            sha => $info->{tree},
+        },
+        parents => [
+            map { +{
+                #url
+                sha => $_,
+            } } @{$info->{parent}},
+        ],
+    };
+}
+
 sub get_commit_as_github_jsonable_as_cv {
     my ($self, $sha) = @_;
     my $cv = AE::cv;
@@ -25,32 +55,22 @@ sub get_commit_as_github_jsonable_as_cv {
     $action->get_commit_info_as_cv($sha)->cb(sub {
         my $info = $_[0]->recv;
         if ($info) {
-            # <http://developer.github.com/v3/git/commits/#get-a-commit>
-            $cv->send({
-                sha => $info->{commit},
-                #url
-                author => {
-                    date => _datetime $info->{author}->{time},
-                    name => $info->{author}->{name},
-                    email => $info->{author}->{mail},
-                },
-                committer => {
-                    date => _datetime $info->{committer}->{time},
-                    name => $info->{committer}->{name},
-                    email => $info->{committer}->{mail},
-                },
-                message => $info->{body},
-                tree => {
-                    #url
-                    sha => $info->{tree},
-                },
-                parents => [
-                    map { +{
-                        #url
-                        sha => $_,
-                    } } @{$info->{parent}},
-                ],
-            });
+            $cv->send($self->internal_to_github_jsonable($info));
+        } else {
+            $cv->send(undef);
+        }
+    });
+    return $cv;
+}
+
+sub get_commit_list_as_github_jsonable_as_cv {
+    my ($self, $sha) = @_;
+    my $cv = AE::cv;
+    my $action = $self->process_repository_action;
+    $action->get_commit_info_list_as_cv($sha)->cb(sub {
+        my $infos = $_[0]->recv;
+        if ($infos) {
+            $cv->send([map { $self->internal_to_github_jsonable($_) } @$infos]);
         } else {
             $cv->send(undef);
         }

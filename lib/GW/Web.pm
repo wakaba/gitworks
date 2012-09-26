@@ -133,11 +133,38 @@ sub process {
             require GW::Loader::Commits;
             my $loader = GW::Loader::Commits->new_from_process_repository_action($action);
             $loader->get_commit_as_github_jsonable_as_cv($sha)->cb(sub {
-                my $json = $_[0]->recv
-                    or $app->throw_error(404, reason_phrase => 'Commit not found');
-                $app->send_json($json);
+                my $json = $_[0]->recv;
+                if ($json) {
+                    $app->send_json($json);
+                } else {
+                    $app->send_error(404, reason_phrase => 'Commit not found');
+                }
             });
             return $app->throw;
+        } elsif (defined $path->[1] and $path->[1] eq 'commits.json' and
+                 not defined $path->[2]) {
+            # /repos/commits.json
+            $class->auth($app, 1);
+
+            # <http://developer.github.com/v3/repos/commits/#list-commits-on-a-repository>
+
+            my $action = $class->process_repository_action($url, $cached_d);
+            require GW::Loader::Commits;
+            my $loader = GW::Loader::Commits->new_from_process_repository_action($action);
+            my $sha = $app->bare_param('sha') || 'master';
+warn "GET!!!";
+            $loader->get_commit_list_as_github_jsonable_as_cv($sha)->cb(sub {
+warn "??????????";
+                my $json = $_[0]->recv;
+                if ($json) {
+                    $app->send_json($json);
+                } else {
+                    $app->send_error(404, reason_phrase => 'Commit not found');
+                }
+            });
+warn "commits TRHROW";
+            return $app->throw;
+
         } elsif (defined $path->[1] and $path->[1] eq 'statuses' and
                  defined $path->[2] and $path->[2] =~ /.\.json\z/ and
                  not defined $path->[3]) {
