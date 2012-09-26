@@ -9,6 +9,8 @@ use File::Temp qw(tempdir);
 use Path::Class;
 use GW::Action::ProcessRepository;
 
+my $DEBUG = $ENV{GW_DEBUG};
+
 test {
     my $c = shift;
 
@@ -16,7 +18,7 @@ test {
     system "cd $temp_d && git init && echo 'hoge:\n\techo 1234 > foo.txt' > Makefile && git add Makefile && git commit -m New";
     my $rev = `cd $temp_d && git rev-parse HEAD`;
 
-    my $cached_d = dir(tempdir(CLEANUP => 1));
+    my $cached_d = dir(tempdir(CLEANUP => !$DEBUG));
 
     my $job = {
         repository_url => $temp_d->stringify,
@@ -44,7 +46,7 @@ test {
     my $rev = `cd $temp_d && git rev-parse HEAD`;
     system "cd $temp_d && echo 'hoge:\n\techo 9999 > foo.txt' > Makefile && git add Makefile && git commit -m Old";
 
-    my $cached_d = dir(tempdir(CLEANUP => 1));
+    my $cached_d = dir(tempdir(CLEANUP => !$DEBUG));
 
     my $job = {
         repository_url => $temp_d->stringify,
@@ -74,7 +76,7 @@ test {
     my $temp2_d = dir(tempdir(CLEANUP => 1));
     system "cd $temp2_d && echo \"echo 5566 > foo.txt\" > hoge.sh";
 
-    my $cached_d = dir(tempdir(CLEANUP => 1));
+    my $cached_d = dir(tempdir(CLEANUP => !$DEBUG));
 
     my $job = {
         repository_url => $temp_d->stringify,
@@ -103,7 +105,7 @@ test {
     my $rev = `cd $temp_d && git rev-parse HEAD`;
 
     my $temp2_d = dir(tempdir(CLEANUP => 1));
-    my $cached_d = dir(tempdir(CLEANUP => 1));
+    my $cached_d = dir(tempdir(CLEANUP => !$DEBUG));
 
     my $job = {
         repository_url => $temp_d->stringify,
@@ -131,7 +133,7 @@ test {
     system "cd $temp_d && git init && echo 'hoge:\n\techo 1234 > foo.txt' > Makefile && git add Makefile && git commit -m New";
     my $rev = `cd $temp_d && git rev-parse HEAD`;
 
-    my $cached_d = dir(tempdir(CLEANUP => 1));
+    my $cached_d = dir(tempdir(CLEANUP => !$DEBUG));
 
     my $job = {
         repository_url => $temp_d->stringify,
@@ -200,7 +202,7 @@ test {
     my $temp2_d = dir(tempdir(CLEANUP => 1));
     system "cd $temp2_d && echo \"echo 5566 > foo.txt\" > hoge.sh";
 
-    my $cached_d = dir(tempdir(CLEANUP => 1));
+    my $cached_d = dir(tempdir(CLEANUP => !$DEBUG));
 
     my $job = {
         repository_url => $temp_d->stringify,
