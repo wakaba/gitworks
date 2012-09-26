@@ -200,7 +200,7 @@ sub get_commit_info_as_cv {
         )->cb(sub {
             require Git::Parser::Log;
             my $parsed = (defined $result and length $result)
-                ? Git::Parser::Log->parse_format_raw($result)->{commits}->[0]
+                ? Git::Parser::Log->parse_format_raw(decode 'utf-8', $result)->{commits}->[0]
                 : undef;
             $cv->send($parsed);
         });
@@ -220,7 +220,7 @@ sub get_commit_info_list_as_cv {
         )->cb(sub {
             require Git::Parser::Log;
             my $parsed = (defined $result and length $result)
-                ? Git::Parser::Log->parse_format_raw($result)->{commits}
+                ? Git::Parser::Log->parse_format_raw(decode 'utf-8', $result)->{commits}
                 : undef;
             $cv->send($parsed);
         });
