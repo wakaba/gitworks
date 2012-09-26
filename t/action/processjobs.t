@@ -113,11 +113,13 @@ test {
     my $process_action = GW::Action::ProcessJobs->new_from_cached_repo_set_d($cached_d);
     $process_action->db_registry($reg);
     $process_action->process_jobs_as_cv->cb(sub {
-        test {
-            is scalar $temp2_d->file('foo-1.txt')->slurp, "1234-1\n";
-            is scalar $temp2_d->file('foo-2.txt')->slurp, "1234-2\n";
-            done $c;
-        } $c;
+        $process_action->process_jobs_as_cv->cb(sub {
+            test {
+                is scalar $temp2_d->file('foo-1.txt')->slurp, "1234-1\n";
+                is scalar $temp2_d->file('foo-2.txt')->slurp, "1234-2\n";
+                done $c;
+            } $c;
+        });
     });
 } n => 2, wait => mysql_as_cv, name => 'process_jobs multiple job';
 

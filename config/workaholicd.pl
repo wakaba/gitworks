@@ -24,7 +24,7 @@ my $api_key = do {
 
 my @task = (
     {
-        interval => 3,
+        interval => 10,
         dsns => $dsns,
         actions => [{
             db => 'gitworks',

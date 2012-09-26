@@ -15,7 +15,7 @@ sub cached_repo_set_d {
 }
 
 sub job_count {
-    return 5;
+    return 1;
 }
 
 sub timeout {
