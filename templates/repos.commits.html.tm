@@ -28,8 +28,12 @@
           <dd pl:id="'commit-status-' . $status->{id}">
             <a pl:href="$status->{target_url}"><t:text value="$GW::Defs::Statuses::CommitStatusCodeToName->{$status->{state}}"></a>:
             <t:text value="$status->{description}">
-        </f:for>
+        </t:for>
       </t:if>
     </dl>
   </article>
 </t:for>
+
+<script src="http://suika.fam.cx/www/style/ui/time.js.u8" charset=utf-8></script><script>
+  new TER (document.body);
+</script>
