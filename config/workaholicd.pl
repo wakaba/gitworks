@@ -24,7 +24,7 @@ my $api_key = do {
 
 my @task = (
     {
-        interval => 10,
+        interval => 3,
         dsns => $dsns,
         actions => [{
             db => 'gitworks',
@@ -36,7 +36,12 @@ my @task = (
             url => $url,
             basic_auth => [api_key => $api_key],
             args => {},
-        }, {
+        }],
+    },
+    {
+        interval => 10,
+        dsns => $dsns,
+        actions => [{
             db => 'gitworks',
             table_name => 'job',,
             sql => 'SELECT id FROM :table_name:id WHERE process_started < ? AND action_type = "run-test" LIMIT 1',
