@@ -280,7 +280,7 @@ sub process {
             $class->auth($app, 1);
             my $action = $class->process_repository_action($url, $cached_d);
             $action->get_branches_as_cv->cb(sub {
-                $app->send_json($_[0]->recv->map(sub { return {name => $_->[1], commit => {sha => $_->[0]}} }));
+                $app->send_json([map { +{name => $_->[1], commit => {sha => $_->[0]}} } @{$_[0]->recv}]);
             });
             return $app->throw;
         } elsif (defined $path->[1] and $path->[1] eq 'tags.json' and
@@ -289,7 +289,7 @@ sub process {
             $class->auth($app, 1);
             my $action = $class->process_repository_action($url, $cached_d);
             $action->get_tags_as_cv->cb(sub {
-                $app->send_json($_[0]->recv->map(sub { return {name => $_->[1], commit => {sha => $_->[0]}} }));
+                $app->send_json([map { +{name => $_->[1], commit => {sha => $_->[0]}} } @{$_[0]->recv}]);
             });
             return $app->throw;
         }

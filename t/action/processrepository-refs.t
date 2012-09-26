@@ -23,7 +23,7 @@ test {
     $action->get_branches_as_cv->cb(sub {
         my $branches = $_[0]->recv;
         test {
-            eq_or_diff $branches->to_a, [[$rev, 'master']];
+            eq_or_diff $branches, [[$rev, 'master']];
             done $c;
             undef $c;
         } $c;
@@ -48,7 +48,7 @@ test {
     $action->get_branches_as_cv->cb(sub {
         my $branches = $_[0]->recv;
         test {
-            eq_or_diff $branches->to_a, [[$rev2, 'abc/def'], [$rev, 'master']];
+            eq_or_diff $branches, [[$rev2, 'abc/def'], [$rev, 'master']];
             done $c;
             undef $c;
         } $c;
@@ -69,7 +69,7 @@ test {
     $action->get_tags_as_cv->cb(sub {
         my $branches = $_[0]->recv;
         test {
-            eq_or_diff $branches->to_a, [];
+            eq_or_diff $branches, [];
             done $c;
             undef $c;
         } $c;
@@ -94,7 +94,7 @@ test {
     $action->get_tags_as_cv->cb(sub {
         my $branches = $_[0]->recv;
         test {
-            eq_or_diff $branches->to_a, [[$rev2, 'abc/de']];
+            eq_or_diff $branches, [[$rev2, 'abc/de']];
             done $c;
             undef $c;
         } $c;
