@@ -32,7 +32,7 @@ sub mysql_server {
 
 sub cached_repo_set_dir {
     my $self = shift;
-    return $self->{cached_repo_set_dir} ||= File::Temp->newdir(TEMPLATE => 'Test-GW-Server-XXXXXX');
+    return $self->{cached_repo_set_dir} ||= File::Temp->newdir('Test-GW-Server-XXXXXX');
 }
 
 sub cached_repo_set_d {

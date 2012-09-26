@@ -98,7 +98,7 @@ sub has_cached_repo_d_as_cv {
 
 sub temp_repo_temp {
     my $self = shift;
-    return $self->{temp_repo_temp} ||= File::Temp->newdir(TEMPLATE => 'GW-ProcessRepository-XXXXXX', CLEANUP => !$DEBUG);
+    return $self->{temp_repo_temp} ||= File::Temp->newdir('GW-ProcessRepository-XXXXXX', CLEANUP => !$DEBUG);
 }
 
 sub temp_repo_d {
