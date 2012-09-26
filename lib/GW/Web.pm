@@ -152,9 +152,7 @@ sub process {
             require GW::Loader::Commits;
             my $loader = GW::Loader::Commits->new_from_process_repository_action($action);
             my $sha = $app->bare_param('sha') || 'master';
-warn "GET!!!";
             $loader->get_commit_list_as_github_jsonable_as_cv($sha)->cb(sub {
-warn "??????????";
                 my $json = $_[0]->recv;
                 if ($json) {
                     $app->send_json($json);
@@ -162,7 +160,6 @@ warn "??????????";
                     $app->send_error(404, reason_phrase => 'Commit not found');
                 }
             });
-warn "commits TRHROW";
             return $app->throw;
 
         } elsif (defined $path->[1] and $path->[1] eq 'statuses' and
