@@ -249,6 +249,9 @@ sub run_test_as_cv {
     my $command = "cd \Q$d\E && make test 2>&1";
     my $output = $command . "\n";
     my $start_time = time;
+    my $prefix = file(__FILE__)->dir->parent->parent->parent->absolute;
+    local $ENV{PATH} = join ':', grep {not /^\Q$prefix\E\// } split /:/, $ENV{PATH};
+    local $ENV{PERL5LIB} = '';
     run_cmd(
         $command,
         '>' => sub {

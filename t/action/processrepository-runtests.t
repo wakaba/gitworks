@@ -64,7 +64,7 @@ test {
     my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
     my $temp_d = dir(tempdir(CLEANUP => 1));
-    system "cd $temp_d && git init && echo 'test:\n\techo 1234 > foo.txt' > Makefile && git add Makefile && git commit -m New";
+    system "cd $temp_d && git init && echo 'test:\n\techo 1234 > foo.txt\n\techo PATH=\$\$PATH' > Makefile && git add Makefile && git commit -m New";
     my $rev = `cd $temp_d && git rev-parse HEAD`;
     chomp $rev;
 
@@ -94,6 +94,7 @@ test {
             is $logs->[0]->{sha}, $rev;
             like $logs->[0]->{data}, qr{^cd \\/tmp\\/\S+ && make test 2>&1}m;
             like $logs->[0]->{data}, qr{^Exited with status 0}m;
+            #warn $logs->[0]->{data};
             is $logs->[0]->{title}, 'GitWorks repository test - Succeeded';
             
             done $c;
