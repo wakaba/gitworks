@@ -6,7 +6,7 @@
 <h1><code><t:text value=$repository_url></code></h1>
 <h2>Commits</h2>
 
-<p>Repository <a pl:href="'/repos.json?repository_url=' . (percent_encode_c $repository_url)"><code><t:text value=$repository_url></code></a></p>
+<p>Repository <a pl:href="'/repos?repository_url=' . (percent_encode_c $repository_url)"><code><t:text value=$repository_url></code></a></p>
 
 <t:for as=$commit x="$commits">
   <article pl:id="'commit-' . $commit->{sha}">
