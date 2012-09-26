@@ -11,12 +11,12 @@
 
   <dt>Branches
   <dd><ul id=list-branches data-template="
-    <a href class=link><code class=ref-name></code> <code class=sha></code></a>
+    <a href class=link-ref-name><code class=ref-name></code></a> <a href class=link-sha><code class=sha></code></a>
   "></ul>
 
   <dt>Tags
   <dd><ul id=list-logs data-template="
-    <a href class=link><code class=ref-name></code> <code class=sha></code></a>
+    <a href class=link-ref-name><code class=ref-name></code></a> <a href class=link-sha><code class=sha></code></a>
   "></ul>
 </dl>
 
@@ -45,7 +45,8 @@
       li.innerHTML = template;
       li.querySelector('.ref-name').textContent = entry.name;
       li.querySelector('.sha').textContent = entry.commit.sha.substring(0, 10);
-      li.querySelector('.link').href = '/repos/commits?sha=' + encodeURIComponent(entry.commit.sha) + '&repository_url=' + encodeURIComponent(repoURL);
+      li.querySelector('.link-ref-name').href = '/repos/commits?sha=' + encodeURIComponent(entry.commit.name) + '&repository_url=' + encodeURIComponent(repoURL);
+      li.querySelector('.link-ref-sha').href = '/repos/commits?sha=' + encodeURIComponent(entry.commit.sha) + '&repository_url=' + encodeURIComponent(repoURL);
       ul.appendChild(li);
     }
   }, function () {
@@ -65,7 +66,8 @@
       li.innerHTML = template;
       li.querySelector('.ref-name').textContent = entry.name;
       li.querySelector('.sha').textContent = entry.commit.sha.substring(0, 10);
-      li.querySelector('.link').href = '/repos/commits?sha=' + encodeURIComponent(entry.commit.sha) + '&repository_url=' + encodeURIComponent(repoURL);
+      li.querySelector('.link-ref-name').href = '/repos/commits?sha=' + encodeURIComponent(entry.commit.name) + '&repository_url=' + encodeURIComponent(repoURL);
+      li.querySelector('.link-ref-sha').href = '/repos/commits?sha=' + encodeURIComponent(entry.commit.sha) + '&repository_url=' + encodeURIComponent(repoURL);
       ul.appendChild(li);
     }
   }, function () {

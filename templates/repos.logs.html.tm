@@ -21,7 +21,7 @@ sub _datetime ($) {
     <dl>
       <dt>sha
       <dd><a pl:href="'/repos/git/commits/' . $log->{sha} . '?repository_url=' . (percent_encode_c $repository_url)"><t:text value="$log->{sha}"></a>
-        (<a href="'/repos/git/commits/' . (percent_encode_c $log->{branch}) . '?repository_url=' . (percent_encode_c $repository_url)"><t:text value="$log->{branch}"></a>)
+        (<a pl:href="'/repos/git/commits/' . (percent_encode_c $log->{branch}) . '?repository_url=' . (percent_encode_c $repository_url)"><t:text value="$log->{branch}"></a>)
       <dt>Date
       <dd><time><t:text value="_datetime $log->{created}"></time>
       <dt>Data
