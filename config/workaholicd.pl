@@ -40,7 +40,7 @@ my @task = (
         }],
     },
     {
-        interval => 30,
+        interval => 10,
         timeout => 10*60,
         dsns => $dsns,
         actions => [{
