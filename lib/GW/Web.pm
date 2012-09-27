@@ -299,6 +299,12 @@ sub process {
         $app->requires_request_method ({POST => 1});
 
         my $http = $app->http;
+
+        my $allow = $app->bare_param_list('action_type');
+        my $disallow = $app->bare_param_list('not_action_type');
+        my $id = int rand 10000;
+        warn "$id: Processing jobs (+@$allow -@$disallow)\n";
+
         require GW::Action::ProcessJobs;
         my $action = GW::Action::ProcessJobs->new_from_cached_repo_set_d($cached_d);
         $action->db_registry($reg);
@@ -307,9 +313,9 @@ sub process {
             my $message = '[' . (scalar gmtime) . '] ' . $msg . "\n";
             $http->send_response_body_as_text($message);
             if ($args{die}) {
-                die $message;
+                die "$id: $message";
             } else {
-                warn $message;
+                warn "$id: $message";
             }
         });
         $http->set_status(200);
@@ -317,6 +323,7 @@ sub process {
             action_types => $app->bare_param_list('action_type'),
             not_action_types => $app->bare_param_list('not_action_type'),
         )->cb(sub {
+            warn "$id: Done\n";
             $http->close_response_body;
         });
         return $app->throw;
