@@ -36,7 +36,7 @@ my @task = (
             },
             url => $url,
             basic_auth => [api_key => $api_key],
-            args => {},
+            args => {not_action_type => ['run-test']},
         }],
     },
     {
@@ -52,7 +52,7 @@ my @task = (
             },
             url => $url,
             basic_auth => [api_key => $api_key],
-            args => {},
+            args => {action_type => ['run-test']},
         }],
     },
 );

@@ -65,6 +65,50 @@ test {
 
     my $reg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
+    my $url = q<git://hoge/fuga> . rand;
+    my $branch = q<devel/hoge>;
+    my $hash = q<12344abc>;
+    my $act = GW::Action::InsertJob->new_from_repository($url, $branch, $hash);
+    $act->db_registry($reg);
+    $act->insert_job('testaction1', {12 => 31});
+
+    my $cached_d = dir(tempdir(CLEANUP => 1));
+    my $action = GW::Action::ProcessJobs->new_from_cached_repo_set_d($cached_d);
+    $action->db_registry($reg);
+
+    is $action->get_jobs(action_types => ['testaction1'])->length, 1;
+    is $action->get_jobs(action_types => ['testaction2'])->length, 0;
+    
+    $c->done;
+} n => 2, wait => sub { mysql_as_cv }, name => 'action_types';
+
+test {
+    my $c = shift;
+
+    my $reg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+
+    my $url = q<git://hoge/fuga> . rand;
+    my $branch = q<devel/hoge>;
+    my $hash = q<12344abc>;
+    my $act = GW::Action::InsertJob->new_from_repository($url, $branch, $hash);
+    $act->db_registry($reg);
+    $act->insert_job('testaction1', {12 => 31});
+
+    my $cached_d = dir(tempdir(CLEANUP => 1));
+    my $action = GW::Action::ProcessJobs->new_from_cached_repo_set_d($cached_d);
+    $action->db_registry($reg);
+    my $jobs = $action->get_jobs;
+
+    is $action->get_jobs(not_action_types => ['testaction1'])->length, 0;
+    
+    $c->done;
+} n => 1, wait => sub { mysql_as_cv }, name => 'not_action_types';
+
+test {
+    my $c = shift;
+
+    my $reg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+
     my $temp_d = dir(tempdir(CLEANUP => 1));
     my $temp2_d = dir(tempdir(CLEANUP => 1));
     system "cd $temp_d && git init && echo 'hoge:\n\techo 1234 > @{[$temp2_d]}/foo.txt' > Makefile && git add Makefile && git commit -m New";

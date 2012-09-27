@@ -313,7 +313,10 @@ sub process {
             }
         });
         $http->set_status(200);
-        $action->process_jobs_as_cv->cb(sub {
+        $action->process_jobs_as_cv(
+            action_types => $app->bare_param_list('action_type'),
+            not_action_types => $app->bare_param_list('not_action_type'),
+        )->cb(sub {
             $http->close_response_body;
         });
         return $app->throw;

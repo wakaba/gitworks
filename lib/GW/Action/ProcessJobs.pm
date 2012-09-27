@@ -37,7 +37,15 @@ sub db_registry {
 }
 
 sub get_jobs {
-    my $self = shift;
+    my ($self, %args) = @_;
+
+    my @where;
+    if ($args{action_types} and @{$args{action_types}}) {
+        push @where, action_type => {-in => $args{action_types}};
+    }
+    if ($args{not_action_types} and @{$args{not_action_types}}) {
+        push @where, action_type => {-not_in => $args{not_action_types}};
+    }
 
     my $db = $self->db_registry->load('gitworks');
     my $pid = $db->execute(
@@ -45,6 +53,7 @@ sub get_jobs {
         {},
         source_name => 'master',
     )->first->{id};
+
     $db->update(
         'job',
         {
@@ -52,6 +61,7 @@ sub get_jobs {
             process_started => time,
         },
         where => {
+            @where,
             process_started => {'<', time - $self->timeout},
         },
         order => ['created' => 'ASC'],
@@ -81,13 +91,13 @@ sub delete_job {
 }
 
 sub process_jobs_as_cv {
-    my $self = shift;
+    my ($self, %args) = @_;
     my $cv = AE::cv;
     $cv->begin(sub { $_[0]->send });
 
     my $cached_d = $self->cached_repo_set_d;
     my $dbreg = $self->db_registry;
-    $self->get_jobs->each(sub {
+    $self->get_jobs(%args)->each(sub {
         my $job = $_;
         my $repo_action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
         $repo_action->dbreg($dbreg);
