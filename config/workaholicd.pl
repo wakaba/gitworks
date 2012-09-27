@@ -41,7 +41,7 @@ my @task = (
     },
     {
         interval => 10,
-        timeout => 10*60,
+        timeout => 30*60,
         dsns => $dsns,
         actions => [{
             db => 'gitworks',
@@ -57,7 +57,7 @@ my @task = (
     },
     {
         interval => 10,
-        timeout => 50*60,
+        timeout => 60*60,
         dsns => $dsns,
         actions => [{
             db => 'gitworks',
