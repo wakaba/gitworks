@@ -300,8 +300,15 @@ sub process {
 
         my $http = $app->http;
 
-        my $allow = $app->bare_param_list('action_type');
-        my $disallow = $app->bare_param_list('not_action_type');
+        my $json = $app->request_json;
+        $app->throw_error(422, reason_phrase => 'no args')
+            unless not $json->{args} or ref $json->{args} eq 'HASH';
+        my $allow = $json->{args}->{action_types} || [];
+        $app->throw_error(422, reason_phrase => 'bad args.action_types')
+            unless ref $allow eq 'ARRAY';
+        my $disallow = $json->{args}->{not_action_types} || [];
+        $app->throw_error(422, reason_phrase => 'bad args.not_action_types')
+            unless ref $disallow eq 'ARRAY';
         my $id = int rand 10000;
         warn "$id: Processing jobs (+@$allow -@$disallow)\n";
 
@@ -320,8 +327,8 @@ sub process {
         });
         $http->set_status(200);
         $action->process_jobs_as_cv(
-            action_types => $app->bare_param_list('action_type'),
-            not_action_types => $app->bare_param_list('not_action_type'),
+            action_types => $allow,
+            not_action_types => $disallow,
         )->cb(sub {
             warn "$id: Done\n";
             $http->close_response_body;
