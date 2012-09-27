@@ -30,7 +30,7 @@ my @task = (
         actions => [{
             db => 'gitworks',
             table_name => 'job',,
-            sql => 'SELECT id FROM :table_name:id WHERE process_started < ? AND action_type != "run-test" LIMIT 1',
+            sql => 'SELECT id FROM :table_name:id WHERE process_started < ? AND action_type != "run-test" AND action_type != "command" LIMIT 1',
             get_sql_args => sub {
                 return {process_started => time - 10 * 60};
             },
