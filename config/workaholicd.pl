@@ -25,6 +25,7 @@ my $api_key = do {
 my @task = (
     {
         interval => 3,
+        timeout => 60,
         dsns => $dsns,
         actions => [{
             db => 'gitworks',
@@ -40,6 +41,7 @@ my @task = (
     },
     {
         interval => 10,
+        timeout => 50*60,
         dsns => $dsns,
         actions => [{
             db => 'gitworks',
