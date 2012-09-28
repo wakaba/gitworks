@@ -21,7 +21,8 @@ Makefile.setupenv:
 lperl lplackup lprove: %: Makefile-setupenv
 	$(MAKE) --makefile Makefile.setupenv $@ \
 	    PMB_PMTAR_REPO_URL=$(PMB_PMTAR_REPO_URL) \
-	    PMB_PMPP_REPO_URL=$(PMB_PMPP_REPO_URL)
+	    PMB_PMPP_REPO_URL=$(PMB_PMPP_REPO_URL) \
+	    PERL_VERSION=$(PERL_VERSION)
 
 local/bin/pmbp.pl: always
 	mkdir -p local/bin
