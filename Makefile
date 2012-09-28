@@ -5,8 +5,8 @@ all:
 WGET = wget
 GIT = git
 PERL = perl
-PERL_VERSION = latest
-PERL_PATH = $(abspath local/perlbrew/perls/perl-$(PERL_VERSION)/bin)
+PERL_VERSION = 5.16.1
+PERL_ENV = PATH="$(abspath local/perlbrew/perls/perl-$(PERL_VERSION)/bin):$(abspath local/perl-$(PERL_VERSION)/pm/bin):$(PATH)"
 
 PMB_PMTAR_REPO_URL =
 PMB_PMPP_REPO_URL = 
@@ -18,23 +18,35 @@ Makefile-setupenv: Makefile.setupenv
 Makefile.setupenv:
 	$(WGET) -O $@ https://raw.github.com/wakaba/perl-setupenv/master/Makefile.setupenv
 
-lperl lplackup lprove local-perl perl-version perl-exec \
-pmb-install pmb-update local-submodules \
-cinnamon: %: Makefile-setupenv
+lperl lplackup lprove: %: Makefile-setupenv
 	$(MAKE) --makefile Makefile.setupenv $@ \
 	    PMB_PMTAR_REPO_URL=$(PMB_PMTAR_REPO_URL) \
 	    PMB_PMPP_REPO_URL=$(PMB_PMPP_REPO_URL)
 
+local/bin/pmbp.pl: always
+	mkdir -p local/bin
+	$(WGET) -O $@ https://github.com/wakaba/perl-setupenv/raw/master/bin/pmbp.pl
+
+PMBP_OPTIONS = 
+
+local-perl: local/bin/pmbp.pl
+	$(PERL_ENV) $(PERL) local/bin/pmbp.pl $(PMBP_OPTIONS) --perl-version $(PERL_VERSION) --install-perl
+
+pmbp-update: local/bin/pmbp.pl
+	$(PERL_ENV) $(PERL) local/bin/pmbp.pl $(PMBP_OPTIONS) --update
+
+pmbp-install: local/bin/pmbp.pl
+	 $(PERL_ENV) $(PERL) local/bin/pmbp.pl $(PMBP_OPTIONS) --install
+
 git-submodules:
 	$(GIT) submodule update --init
 
-deps: local-submodules pmb-install lperl
+deps: local-perl pmbp-install lperl
+
+always:
 
 # ------ Tests ------
 
-PERL_ENV = PATH="$(abspath local/perl-$(PERL_VERSION)/pm/bin):$(PERL_PATH):$(PATH)" PERL5LIB="$(shell cat config/perl/libs.txt)"
-PREPARE_DB_SET_PL = modules/rdb-utils/bin/prepare-db-set.pl
-DB_SET_JSON = t/tmp/dsns.json
 PROVE = prove
 
 test: test-deps test-main
