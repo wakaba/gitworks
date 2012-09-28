@@ -243,10 +243,15 @@ sub process {
                 my $data = {
                     sha => $sha,
                     branch => $app->bare_param('branch'),
+                    title => $app->text_param('title'),
                     data => $app->text_param('data'),
                 };
-                $action->add_log(%$data);
+                $data->{title} = '' unless defined $data->{title};
+                $data->{data} = '' unless defined $data->{data};
+                my $log_info = $action->add_log(%$data);
                 $app->http->set_status(201);
+                $app->http->set_response_header(Location => $log_info->{logs_url});
+                $data->{log_id} = $log_info->{log_id};
                 $app->send_json($data);
                 return $app->throw;
             } else {
@@ -261,6 +266,7 @@ sub process {
                         id => $_->{id},
                         branch => $_->{branch},
                         sha => $_->{sha},
+                        title => $_->{title},
                         data => $_->{data},
                         created => $_->{created},
                     } }));

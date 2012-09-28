@@ -208,6 +208,7 @@ test {
             repository_url => $url,
             sha => $sha,
             branch => q<hrr grg aega>,
+            title => qq<\x{6500}>,
             data => qq<\x{452}\x{5623}aab>,
         },
         anyevent => 1,
@@ -216,11 +217,16 @@ test {
             test {
                 is $res->code, 201;
                 my $json = json_bytes2perl $res->content;
+                ok $json->{log_id};
                 eq_or_diff $json, {
                     sha => $sha,
                     branch => q<hrr grg aega>,
+                    title => qq<\x{6500}>,
                     data => qq<\x{452}\x{5623}aab>,
+                    log_id => $json->{log_id},
                 };
+                is $res->header('Location'),
+                    qq<http://$host/repos/logs?repository_url=htfaefeafeeeafafee%2Ffefea%2Fe.gfee%3Fa&sha=aabbr425gaaaaaaaaage#log-> . $json->{log_id};
                 $cv1->send;
             } $c;
         };
@@ -248,6 +254,7 @@ test {
                         eq_or_diff $json, [{
                             sha => $sha,
                             branch => q<hrr grg aega>,
+                            title => qq<\x{6500}>,
                             data => qq<\x{452}\x{5623}aab>,
                         }];
                         $cv2->send;
@@ -273,10 +280,13 @@ test {
                     test {
                         is $res->code, 201;
                         my $json = json_bytes2perl $res->content;
+                        ok $json->{log_id};
                         eq_or_diff $json, {
                             sha => $sha,
                             branch => undef,
+                            title => '',
                             data => q<aa>,
+                            log_id => $json->{log_id},
                         };
                         $cv3->send;
                     } $c;
@@ -312,10 +322,12 @@ test {
                         delete $json->[1]->{created};
                         eq_or_diff $json, [{
                             sha => $sha,
+                            title => '',
                             data => 'aa',
                         }, {
                             sha => $sha,
                             branch => q<hrr grg aega>,
+                            title => qq<\x{6500}>,
                             data => qq<\x{452}\x{5623}aab>,
                         }];
                         $cv4->end;
@@ -423,6 +435,6 @@ test {
             undef $c;
         } $c;
     });
-} n => 24, wait => $server, name => 'post / get';
+} n => 27, wait => $server, name => 'post / get';
 
 run_tests;
