@@ -5,6 +5,8 @@ BEGIN {
     $file_name .= '/../../../config/perl/libs.txt';
     open my $file, '<', $file_name or die "$0: $file_name: $!";
     unshift @INC, split /:/, <$file>;
+    $file_name =~ s{/config/perl/libs.txt}{/t_deps/modules/*/lib};
+    unshift @INC, glob $file_name;
 }
 use warnings;
 use Exporter::Lite;
