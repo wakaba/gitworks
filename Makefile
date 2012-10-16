@@ -36,11 +36,16 @@ PROVE = ./prove
 
 test: test-deps test-main
 
-test-deps: deps
+test-deps: deps test-home
 	cd modules/rdb-utils && $(MAKE) deps
 
+test-home:
+	mkdir -p local/home
+	git config --file local/home/.gitconfig user.name gitworks
+	git config --file local/home/.gitconfig user.email gitworks@test
+
 test-main:
-	$(PROVE) \
+	HOME="$(abspath local/home)" $(PROVE) \
 	    t/defs/*.t t/action/*.t t/loader/*.t t/web/*.t t/commands/*.t
 
 # ------ Local (example) ------
