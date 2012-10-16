@@ -16,14 +16,14 @@ sub load_api_key_by_env {
 }
 
 sub psgi_app {
-    my (undef, $reg, $cached_d) = @_;
+    my (undef, $reg, $cached_d, $config) = @_;
     return sub {
         my $http = Wanage::HTTP->new_from_psgi_env ($_[0]);
         my $app = GW::Warabe::App->new_from_http ($http);
         
         return $http->send_response(onready => sub {
             $app->execute (sub {
-                GW::Web->process ($app, $reg, $cached_d);
+                GW::Web->process($app, $reg, $cached_d, $config);
             });
         });
     };
@@ -40,7 +40,7 @@ sub auth {
 }
 
 sub process {
-    my ($class, $app, $reg, $cached_d) = @_;
+    my ($class, $app, $reg, $cached_d, $config) = @_;
 
     # XXX Origin: test against CSRF attack
 
@@ -321,6 +321,7 @@ sub process {
         require GW::Action::ProcessJobs;
         my $action = GW::Action::ProcessJobs->new_from_cached_repo_set_d($cached_d);
         $action->db_registry($reg);
+        $action->karasuma_config($config);
         $action->onmessage(sub {
             my ($msg, %args) = @_;
             my $message = '[' . (scalar gmtime) . '] ' . $msg . "\n";

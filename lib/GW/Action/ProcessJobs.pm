@@ -36,6 +36,13 @@ sub db_registry {
     return $_[0]->{db_registry};
 }
 
+sub karasuma_config {
+    if (@_ > 1) {
+        $_[0]->{karasuma_config} = $_[1];
+    }
+    return $_[0]->{karasuma_config};
+}
+
 sub get_jobs {
     my ($self, %args) = @_;
 
@@ -102,6 +109,7 @@ sub process_jobs_as_cv {
         my $repo_action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
         $repo_action->dbreg($dbreg);
         $repo_action->onmessage($self->onmessage);
+        $repo_action->karasuma_config($self->karasuma_config);
         $cv->begin;
         $repo_action->run_action_as_cv->cb(sub {
             $self->delete_job($job->{job_id});

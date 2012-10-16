@@ -11,6 +11,7 @@ BEGIN {
 use warnings;
 use GW::MySQL;
 use GW::Web;
+use Karasuma::Config::JSON;
 use Path::Class;
 
 if ($ENV{GW_COMMAND_DIR_NAME}) {
@@ -19,6 +20,8 @@ if ($ENV{GW_COMMAND_DIR_NAME}) {
 
 my $cached_d = dir($ENV{GW_CACHED_REPO_SET_DIR_NAME} || file(__FILE__)->dir->parent->subdir('local', 'cached-repo-set'));
 
+my $config = Karasuma::Config::JSON->new_from_env;
+
 my $reg = GW::MySQL->load_by_env;
 GW::Web->load_api_key_by_env;
-return GW::Web->psgi_app($reg, $cached_d);
+return GW::Web->psgi_app($reg, $cached_d, $config);

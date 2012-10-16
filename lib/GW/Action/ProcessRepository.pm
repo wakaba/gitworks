@@ -9,6 +9,8 @@ use AnyEvent::Util;
 use Encode;
 use GW::Defs::Statuses;
 use Time::HiRes qw(time);
+use JSON::Functions::XS qw(file2perl perl2json_bytes);
+use Web::UserAgent::Functions qw(http_post_data);
 
 sub new_from_job_and_cached_repo_set_d {
     my $self = $_[0]->new_from_url_and_cached_repo_set_d($_[1]->{repository_url}, $_[2]);
@@ -91,6 +93,82 @@ sub run_test_as_cv {
     return $cv;
 }
 
+sub cennel_add_operations_as_cv {
+    my $self = shift;
+    my $cv = AE::cv;
+
+    my $repo_d = $self->temp_repo_d;
+    my $defs_d = $repo_d->subdir('config', 'cennel', 'deploy');
+
+    if (-d $defs_d) {
+        $cv->begin;
+        my $this_branch = $self->branch;
+        for ($defs_d->children) {
+            next unless $_ =~ m{/[^/]+\.json$} and -f $_;
+            $cv->begin;
+            my $json = file2perl $_;
+            if ($json and ref $json eq 'HASH') {
+                if (defined $json->{branch} and
+                    defined $this_branch and
+                    $json->{branch} eq $this_branch) {
+                    $self->cennel_add_operation_as_cv($json->{role}, $json->{task})->cb(sub {
+                        $cv->end;
+                    });
+                } else {
+                    $cv->end;
+                }
+            } else {
+                $cv->end;
+            }
+        }
+        $cv->end;
+    } else {
+        $cv->send;
+    }
+
+    return $cv;
+}
+
+sub karasuma_config {
+    if (@_ > 1) {
+        $_[0]->{karasuma_config} = $_[1];
+    }
+    return $_[0]->{karasuma_config};
+}
+
+sub cennel_jobs_url {
+    return $_[0]->karasuma_config->get_text('gitworks.cennel.jobs_url');
+}
+
+sub cennel_api_key {
+    return $_[0]->karasuma_config->get_file_base64_text('gitworks.cennel.api_key');
+}
+
+sub cennel_add_operation_as_cv {
+    my ($self, $role, $task) = @_;
+    my $cv = AE::cv;
+
+    http_post_data
+        url => $self->cennel_jobs_url,
+        basic_auth => [api_ke => $self->cennel_api_key],
+        header_fields => {'Content-Type' => 'application/json'},
+        content => perl2json_bytes +{
+            repository => {url => $self->url},
+            ref => q{refs/heads/} . $self->branch,
+            after => $self->revision,
+            hook_args => {
+                role => $role,
+                task => $task,
+            },
+        },
+        anyevent => 1,
+        cb => sub {
+            $cv->send;
+        };
+
+    return $cv;
+}
+
 sub run_action_as_cv {
     my $self = shift;
     my $action = $self->{job}->{action_type};
@@ -137,6 +215,8 @@ sub run_action_as_cv {
             }
         } elsif ($action eq 'run-test') {
             $self->run_test_as_cv->cb(sub { $cv->send });
+        } elsif ($action eq 'cennel.add-operations') {
+            $self->cennel_add_operations_as_cv->cb(sub { $cv->send });
         } else {
             warn "Action |$action| is not supported";
             $cv->send;

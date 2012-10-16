@@ -9,6 +9,7 @@ use Scalar::Util qw(weaken);
 use File::Temp;
 use Test::AnyEvent::MySQL::CreateDatabase;
 use Test::AnyEvent::plackup;
+use JSON::Functions::XS qw(perl2json_bytes);
 
 sub new {
     return bless {workaholicd_boot_cv => AE::cv}, $_[0];
@@ -16,6 +17,46 @@ sub new {
 
 sub root_d {
     return file(__FILE__)->resolve->dir->parent->parent->parent->parent;
+}
+
+sub temp_dir {
+    my $self = shift;
+    return $self->{temp_dir} ||= File::Temp->newdir('Test-GW-Server-XX'.'XX'.'XX', TMPDIR => 1);
+}
+
+sub temp_d {
+    my $self = shift;
+    return $self->{temp_d} ||= dir($self->temp_dir->dirname);
+}
+
+# ------ Config ------
+
+sub karasuma_config_json_f {
+    my $self = shift;
+    return $self->{karasuma_config_json_f} ||= $self->temp_d->file('config.json');
+}
+
+sub karasuma_config_keys_d {
+    my $self = shift;
+    return $self->{karasuma_config_keys_d} ||= $self->temp_d->subdir('keys');
+}
+
+sub write_config {
+    my $self = shift;
+    my $json_f = $self->karasuma_config_json_f;
+    $json_f->dir->mkpath;
+    print { $json_f->openw } perl2json_bytes +{
+        'gitworks.cennel.jobs_url' => q<http://CENNEL/jobs>,
+        'gitworks.cennel.api_key' => 'hoge/fuga.txt',
+    };
+    my $key_f = $self->karasuma_config_keys_d->file('hoge', 'fuga,txt');
+    $key_f->dir->mkpath;
+    print { $key_f->openw } encode_base64 $self->cennel_api_key;
+}
+
+sub cennel_api_key {
+    my $self = shift;
+    return $self->{cennel_api_key} ||= rand 100000;
 }
 
 # ------ MySQL server ------
@@ -30,14 +71,9 @@ sub mysql_server {
     return $self->{mysql_server} ||= Test::AnyEvent::MySQL::CreateDatabase->new;
 }
 
-sub cached_repo_set_dir {
-    my $self = shift;
-    return $self->{cached_repo_set_dir} ||= File::Temp->newdir('Test-GW-Server-XXXXXX', TMPDIR => 1);
-}
-
 sub cached_repo_set_d {
     my $self = shift;
-    return $self->{cached_repo_set_d} ||= dir($self->cached_repo_set_dir->dirname);
+    return $self->{cached_repo_set_d} ||= $self->temp_d->subdir('repos');
 }
 
 sub dsns_json_f {
@@ -88,10 +124,13 @@ sub api_key_f {
 
 sub _start_web_server {
     my $self = shift;
+    $self->write_config;
 
     local $ENV{GW_DSNS_JSON} = $self->dsns_json_f;
     local $ENV{GW_API_KEY_FILE_NAME} = $self->api_key_f;
     local $ENV{GW_CACHED_REPO_SET_DIR_NAME} = $self->cached_repo_set_d;
+    local $ENV{KARASUMA_CONFIG_JSON} = $self->karasuma_config_json_f;
+    local $ENV{KARASUMA_CONFIG_FILE_DIR_NAME} = $self->karasuma_config_keys_d;
 
     $self->{web_server} = my $server = Test::AnyEvent::plackup->new;
     $server->app($self->psgi_f);
