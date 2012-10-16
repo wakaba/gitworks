@@ -196,23 +196,25 @@ sub process {
             if ($app->http->request_method eq 'POST') {
                 require GW::Action::AddCommitStatus;
                 my $action = GW::Action::AddCommitStatus->new_from_dbreg_and_repository_url($reg, $url);
+                $action->karasuma_config($config);
                 my $state = $app->bare_param('state') || '';
                 $state = $GW::Defs::Statuses::CommitStatusNameToCode->{$state}
                     or $app->throw_error(400, reason_phrase => 'Bad state');
                 my $target_url = $app->bare_param('target_url');
                 my $desc = $app->text_param('description');
-                $action->add_commit_status(
+                $action->add_commit_status_as_cv(
                     sha => $sha,
+                    branch => $app->bare_param('branch'),
                     state => $state,
                     target_url => $target_url,
                     description => $desc,
-                );
-                
-                $app->http->set_status(201);
-                $app->send_json({
-                    state => $GW::Defs::Statuses::CommitStatusCodeToName->{$state},
-                    target_url => $target_url,
-                    description => $desc,
+                )->cb(sub {
+                    $app->http->set_status(201);
+                    $app->send_json({
+                        state => $GW::Defs::Statuses::CommitStatusCodeToName->{$state},
+                        target_url => $target_url,
+                        description => $desc,
+                    });
                 });
                 return $app->throw;
             } else {

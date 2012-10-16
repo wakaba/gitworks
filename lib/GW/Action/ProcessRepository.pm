@@ -34,7 +34,11 @@ sub log_action {
 
 sub commit_status_action {
     require GW::Action::AddCommitStatus;
-    return $_[0]->{commit_status_action} ||= GW::Action::AddCommitStatus->new_from_dbreg_and_repository_url($_[0]->dbreg, $_[0]->url);
+    return $_[0]->{commit_status_action} ||= do {
+        my $action = GW::Action::AddCommitStatus->new_from_dbreg_and_repository_url($_[0]->dbreg, $_[0]->url);
+        $action->karasuma_config($_[0]->karasuma_config);
+        $action;
+    };
 }
 
 sub command_dir_d {
@@ -82,13 +86,13 @@ sub run_test_as_cv {
             title => $title,
             data => $output,
         );
-        $self->commit_status_action->add_commit_status(
+        $self->commit_status_action->add_commit_status_as_cv(
             sha => $self->revision,
+            branch => $self->branch,
             state => $failed ? COMMIT_STATUS_FAILURE : COMMIT_STATUS_SUCCESS,
             target_url => $log_info->{logs_url},
             description => $title,
-        );
-        $cv->send;
+        )->cb(sub { $cv->send });
     });
     return $cv;
 }

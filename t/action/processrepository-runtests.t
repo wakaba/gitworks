@@ -12,12 +12,16 @@ use GW::MySQL;
 use GW::Action::ProcessRepository;
 use GW::Loader::CommitStatuses;
 use GW::Loader::Logs;
+use Karasuma::Config::JSON;
 use URL::PercentEncode qw(percent_encode_c);
 
 my $mysql = mysql_as_cv;
 
 test {
     my $c = shift;
+    my $config = Karasuma::Config::JSON->new_from_config_data({
+        'gitworks.githookhub.hook_url' => q<http://GHH/hook>,
+    });
     my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
     my $temp_d = dir(tempdir(CLEANUP => 1));
@@ -34,6 +38,7 @@ test {
         action_type => 'run-test',
     }, $cached_d);
     $action->dbreg($dbreg);
+    $action->karasuma_config($config);
     $action->run_action_as_cv->cb(sub {
         test {
             my $cs_loader = GW::Loader::CommitStatuses->new_from_dbreg_and_repository_url($dbreg, $temp_d->stringify);
@@ -62,6 +67,9 @@ test {
 test {
     my $c = shift;
     my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+    my $config = Karasuma::Config::JSON->new_from_config_data({
+        'gitworks.githookhub.hook_url' => q<http://GHH/hook>,
+    });
 
     my $temp_d = dir(tempdir(CLEANUP => 1));
     system "cd $temp_d && git init && echo 'test:\n\techo 1234 > foo.txt\n\techo PATH=\$\$PATH' > Makefile && git add Makefile && git commit -m New";
@@ -77,6 +85,7 @@ test {
         action_type => 'run-test',
     }, $cached_d);
     $action->dbreg($dbreg);
+    $action->karasuma_config($config);
     $action->run_action_as_cv->cb(sub {
         test {
             delete $dbreg->{Instances};
@@ -107,6 +116,9 @@ test {
 test {
     my $c = shift;
     my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+    my $config = Karasuma::Config::JSON->new_from_config_data({
+        'gitworks.githookhub.hook_url' => q<http://GHH/hook>,
+    });
 
     my $temp_d = dir(tempdir(CLEANUP => 1));
     system "cd $temp_d && git init && echo 'test:\n\tfalse > foo.txt' > Makefile && git add Makefile && git commit -m New";
@@ -121,6 +133,7 @@ test {
         repository_revision => $rev,
         action_type => 'run-test',
     }, $cached_d);
+    $action->karasuma_config($config);
     $action->dbreg($dbreg);
     $action->run_action_as_cv->cb(sub {
         test {
