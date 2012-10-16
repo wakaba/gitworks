@@ -150,7 +150,7 @@ sub cennel_add_operation_as_cv {
 
     http_post_data
         url => $self->cennel_jobs_url,
-        basic_auth => [api_ke => $self->cennel_api_key],
+        basic_auth => [api_key => $self->cennel_api_key],
         header_fields => {'Content-Type' => 'application/json'},
         content => perl2json_bytes +{
             repository => {url => $self->url},
