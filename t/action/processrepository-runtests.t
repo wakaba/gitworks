@@ -79,6 +79,7 @@ test {
     $action->dbreg($dbreg);
     $action->run_action_as_cv->cb(sub {
         test {
+            delete $dbreg->{Instances};
             my $cs_loader = GW::Loader::CommitStatuses->new_from_dbreg_and_repository_url($dbreg, $temp_d->stringify);
             my $cses = $cs_loader->get_commit_statuses($rev);
             is $cses->length, 1;

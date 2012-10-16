@@ -113,6 +113,8 @@ test {
         description => qq<afee\x{4e00}agageee>,
     );
 
+    delete $dbreg->{Instances};
+
     my $result = $loader->get_commit_statuses_list([$sha, $sha2]);
     eq_or_diff {map { $_ => 1 } keys %$result}, {$sha => 1, $sha2 => 1};
     
