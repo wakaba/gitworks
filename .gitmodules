@@ -46,3 +46,9 @@
 [submodule "t_deps/modules/web-useragent-functions"]
 	path = t_deps/modules/web-useragent-functions
 	url = git://github.com/wakaba/perl-web-useragent-functions
+[submodule "modules/karasuma-config"]
+	path = modules/karasuma-config
+	url = git://github.com/wakaba/karasuma-config
+[submodule "modules/web-useragent-functions"]
+	path = modules/web-useragent-functions
+	url = git://github.com/wakaba/perl-web-useragent-functions

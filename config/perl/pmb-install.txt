@@ -78,6 +78,7 @@ DateTime::Format::MySQL~0.04
 Path::Class~0.26
 common::sense~3.6
 JSON::XS~2.33
+MIME::Base64~3.13
 Getopt::Long~2.38
 JSON~2.53
 Test~1.25
@@ -97,10 +98,8 @@ Time::HiRes~1.9725
 Event~1.20
 IO::Dir~1.07
 Pod::Usage~1.51
-MIME::Base64~3.13
 Unicode::Normalize~1.15
 Unicode::Stringprep~1.104
-Socket~2.006
 Scope::Guard~0.20
 Proc::Wait3~0.04
 Parallel::Prefork~0.13
@@ -111,6 +110,14 @@ HTTP::Parser::XS~0.14
 Net::Server~2.006
 Starman~0.3003
 parent~0.225
+IO::HTML~0.04
+HTML::Entities~3.69
+HTTP::Headers~6.04
+LWP::UserAgent~6.04
+Stream::Buffered~0.02
+HTTP::Body~1.17
+Plack::Loader
+Socket~2.006
 Filter::Util::Call~1.45
 AnyEvent::HTTP~2.14
 IO::Socket::Socks~0.62
