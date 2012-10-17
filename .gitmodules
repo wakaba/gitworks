@@ -43,9 +43,6 @@
 [submodule "t_deps/modules/test-anyevent-plackup"]
 	path = t_deps/modules/test-anyevent-plackup
 	url = git://github.com/wakaba/perl-test-anyevent-plackup
-[submodule "t_deps/modules/web-useragent-functions"]
-	path = t_deps/modules/web-useragent-functions
-	url = git://github.com/wakaba/perl-web-useragent-functions
 [submodule "modules/karasuma-config"]
 	path = modules/karasuma-config
 	url = git://github.com/wakaba/karasuma-config
