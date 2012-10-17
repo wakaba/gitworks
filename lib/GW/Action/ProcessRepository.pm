@@ -202,10 +202,17 @@ sub run_action_as_cv {
             $run_cv->cb(sub { $cv->send });
         } elsif ($action eq 'command') {
             my $command = $args->{command};
+            my $onmessage = $self->onmessage;
             if ($command =~ /\A[0-9A-Za-z_]+\z/ and
                 -f (my $command_f = $self->get_command_f($command))) {
                 my $run_cv = run_cmd
-                    "cd @{[quotemeta $self->temp_repo_d]} && sh @{[$command_f->absolute]}";
+                    "cd @{[quotemeta $self->temp_repo_d]} && sh @{[$command_f->absolute]}",
+                    '>' => sub {
+                        $onmessage->($_[0]) if defined $_[0];
+                    },
+                    '2>' => sub {
+                        $onmessage->($_[0]) if defined $_[0];
+                    };
                 $run_cv->cb(sub {
                     my $return = $_[0]->recv;
                     if ($return >> 8) {
