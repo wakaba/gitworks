@@ -24,13 +24,19 @@ $http_server->set_app_code(q{
             $http->send_response_body_as_ref(\('[' . (join ',', @{$jobs->{$1} or []}) . ']'));
             $http->close_response_body;
             return $http->send_response;
-        } elsif ($path =~ m{^/(\d+)/operation/list\.json$}) {
-            $http->set_response_header('Content-Type' => 'application/json');
-            $http->send_response_body_as_ref(\($ops->{$1} || '[]'));
-            $http->close_response_body;
-            return $http->send_response;
-        } elsif ($path =~ m{^/(\d+)/devel/operation/list\.json$}) {
-            $ops->{$1} = ${$http->request_body_as_ref};
+        } elsif ($path =~ m{^/(\d+)/operation/(.+)\.json$}) {
+            if ($2 ne 'list' and not $ops->{$1}->{$2}) {
+                $http->set_status(404);
+                $http->close_response_body;
+                return $http->send_response;
+            } else {
+                $http->set_response_header('Content-Type' => 'application/json');
+                $http->send_response_body_as_ref(\($ops->{$1}->{$2} || '[]'));
+                $http->close_response_body;
+                return $http->send_response;
+            }
+        } elsif ($path =~ m{^/(\d+)/devel/operation/(.+)\.json$}) {
+            $ops->{$1}->{$2} = ${$http->request_body_as_ref};
             $http->set_status(204);
             $http->close_response_body;
             return $http->send_response;

@@ -64,6 +64,7 @@ sub write_config {
     print { $json_f->openw } perl2json_bytes +{
         'gitworks.cennel.jobs_url' => q<http://>.$self->cennel_host.q</>.$self->cennel_key.q<jobs>,
         'gitworks.cennel.get_operation_list_url' => q<http://>.$self->cennel_host.q</>.$self->cennel_key.q</operation/list.json>,
+        'gitworks.cennel.get_operation_log_url' => q<http://>.$self->cennel_host.q</>.$self->cennel_key.q</operation/%s.json>,
         'gitworks.cennel.api_key' => 'hoge/fuga.txt',
     };
     my $key_f = $self->karasuma_config_keys_d->file('hoge', 'fuga,txt');
