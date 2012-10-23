@@ -52,7 +52,7 @@
   <ul>
     <li><a href=#global-log>Log</a>
     <t:for as=$unit x="[values %{$operation->{units}}]">
-      <li><a pl:href="'unit-' . $unit->{id}"><t:text value="$unit->{host}->{name}"></a>
+      <li><a pl:href="'#unit-' . $unit->{id}"><t:text value="$unit->{host}->{name}"></a>
     </t:for>
   </ul>
 </nav>
@@ -67,7 +67,7 @@
   <article pl:id="'unit-' . $unit->{id}">
     <dl>
       <dt>Operation unit ID
-      <dd><a pl:href="'#' . $unit->{id}"><code><t:text value="$unit->{id}"></code></a>
+      <dd><a pl:href="'#unit-' . $unit->{id}"><code><t:text value="$unit->{id}"></code></a>
 
       <dt>Host
       <dd><code><t:text value="$unit->{host}->{name}"></code>
@@ -106,5 +106,11 @@
               : ''
       ">
     </dl>
+
+    <article pl:id="'unit-' . $unit->{id} . '-log'">
+      <h1>Log</h1>
+  
+      <pre><t:text value="$unit->{data}"></pre>
+    </section>
   </article>
 </t:for>
