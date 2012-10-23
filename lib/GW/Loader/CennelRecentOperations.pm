@@ -17,11 +17,19 @@ sub get_list_url {
     return $_[0]->config->get_text('gitworks.cennel.get_operation_list_url');
 }
 
+sub cennel_basic_auth {
+    return [
+        api_key => 
+        $_[0]->config->get_file_base64_text('gitworks.cennel.api_key'),
+    ];
+}
+
 sub get_recent_operations_as_cv {
     my $self = shift;
     my $cv = AE::cv;
     http_get
         url => $self->get_list_url,
+        basic_auth => $self->cennel_basic_auth,
         anyevent => 1,
         cb => sub {
             my (undef, $res) = @_;
