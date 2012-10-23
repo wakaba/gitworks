@@ -18,7 +18,7 @@
           <p>@<t:text value="$op->{role}->{name}">
           <p><t:text value="$op->{task}->{name}">
         <td>
-          <code><t:text value="$unit->{status}"></code>
+          <code><t:text value="$op->{operation}->{status}"></code>
           (<t:text value="
             {
               1 => 'Initial',
@@ -27,7 +27,7 @@
               4 => 'Succeeded',
               5 => 'Precondition failed',
               6 => 'Skipped',
-            }->{$unit->{status}} || $unit->{status}
+            }->{$op->{operation}->{status}} || $op->{operation}->{status}
           ">)
         <td>
           <p><t:text value="
