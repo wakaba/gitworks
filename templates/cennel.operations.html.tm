@@ -18,6 +18,18 @@
           <p>@<t:text value="$op->{role}->{name}">
           <p><t:text value="$op->{task}->{name}">
         <td>
+          <code><t:text value="$unit->{status}"></code>
+          (<t:text value="
+            {
+              1 => 'Initial',
+              2 => 'Started',
+              3 => 'Failed',
+              4 => 'Succeeded',
+              5 => 'Precondition failed',
+              6 => 'Skipped',
+            }->{$unit->{status}} || $unit->{status}
+          ">)
+        <td>
           <p><t:text value="
             $op->{operation}->{start_timestamp}
                 ? scalar gmtime $op->{operation}->{start_timestamp}
