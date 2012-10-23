@@ -301,6 +301,28 @@ sub process {
             });
             return $app->throw;
         }
+
+    } elsif ($path->[0] eq 'cennel') {
+        if (not defined $path->[1]) {
+            # /cennel
+            $class->auth($app, 0);
+            require GW::Loader::CennelRecentOperations;
+            my $loader = GW::Loader::CennelRecentOperations->new_from_config($config);
+            $loader->get_recent_operations_as_cv->cb(sub {
+                my $data = $_[0]->recv;
+                if ($data) {
+                    $class->process_temma(
+                        $app, ['cennel.operations.html.tm'], {
+                            operations => $data,
+                        },
+                    );
+                } else {
+                    $app->send_error(502, reason_phrase => 'Cennel server does not return result');
+                }
+            });
+            return $app->throw;
+        }
+
     } elsif ($path->[0] eq 'jobs') {
         # /jobs
         $class->auth($app, 1);

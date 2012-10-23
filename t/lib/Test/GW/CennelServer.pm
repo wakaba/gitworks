@@ -10,6 +10,7 @@ $http_server->set_app_code(q{
     use Wanage::HTTP;
     use JSON::Functions::XS qw(perl2json_bytes);
     my $jobs = {};
+    my $ops = {};
     return sub {
         my $http = Wanage::HTTP->new_from_psgi_env($_[0]);
         my $path = $http->url->{path};
@@ -21,6 +22,16 @@ $http_server->set_app_code(q{
         } elsif ($path =~ m{^/(\d+)/devel/jobs$}) {
             $http->set_response_header('Content-Type' => 'application/json');
             $http->send_response_body_as_ref(\('[' . (join ',', @{$jobs->{$1} or []}) . ']'));
+            $http->close_response_body;
+            return $http->send_response;
+        } elsif ($path =~ m{^/(\d+)/operation/list\.json$}) {
+            $http->set_response_header('Content-Type' => 'application/json');
+            $http->send_response_body_as_ref(\($ops->{$1} || '[]'));
+            $http->close_response_body;
+            return $http->send_response;
+        } elsif ($path =~ m{^/(\d+)/devel/operation/list\.json$}) {
+            $ops->{$1} = ${$http->request_body_as_ref};
+            $http->set_status(204);
             $http->close_response_body;
             return $http->send_response;
         }

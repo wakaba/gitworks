@@ -41,12 +41,29 @@ sub karasuma_config_keys_d {
     return $self->{karasuma_config_keys_d} ||= $self->temp_d->subdir('keys');
 }
 
+our $CennelHost;
+sub cennel_host {
+    if (@_ > 1) {
+        $_[0]->{cennel_host} = $_[1];
+    }
+    return $_[0]->{cennel_host} || $CennelHost || 'CENNEL';
+}
+
+our $CennelKey;
+sub cennel_key {
+    if (@_ > 1) {
+        $_[0]->{cennel_key} = $_[1];
+    }
+    return $_[0]->{cennel_key} || $CennelKey || 0;
+}
+
 sub write_config {
     my $self = shift;
     my $json_f = $self->karasuma_config_json_f;
     $json_f->dir->mkpath;
     print { $json_f->openw } perl2json_bytes +{
-        'gitworks.cennel.jobs_url' => q<http://CENNEL/jobs>,
+        'gitworks.cennel.jobs_url' => q<http://>.$self->cennel_host.q</>.$self->cennel_key.q<jobs>,
+        'gitworks.cennel.get_operation_list_url' => q<http://>.$self->cennel_host.q</>.$self->cennel_key.q</operation/list.json>,
         'gitworks.cennel.api_key' => 'hoge/fuga.txt',
     };
     my $key_f = $self->karasuma_config_keys_d->file('hoge', 'fuga,txt');
