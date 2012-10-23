@@ -14,7 +14,7 @@ test {
     my $host = $c->received_data->web_host;
 
     http_get
-        url => qq<http://$host/cennel/12345>,
+        url => qq<http://$host/cennel/logs/12345>,
         basic_auth => [develop => 'testapikey'],
         anyevent => 1,
         cb => sub {

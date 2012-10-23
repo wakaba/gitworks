@@ -321,11 +321,13 @@ sub process {
                 }
             });
             return $app->throw;
-        } elsif ($path->[1] =~ m{\A[0-9]+\z} and not defined $path->[2]) {
-            # /cennel/{operation_id}
+        } elsif ($path->[1] eq 'logs' and
+                 defined $path->[2] and $path->[2] =~ m{\A[0-9]+\z} and
+                 not defined $path->[3]) {
+            # /cennel/logs/{operation_id}
             $class->auth($app, 0);
             require GW::Loader::CennelOperationLog;
-            my $loader = GW::Loader::CennelOperationLog->new_from_config_and_operation_id($config, $path->[1]);
+            my $loader = GW::Loader::CennelOperationLog->new_from_config_and_operation_id($config, $path->[2]);
             $loader->get_operation_log_as_cv->cb(sub {
                 my $data = $_[0]->recv;
                 if ($data) {
