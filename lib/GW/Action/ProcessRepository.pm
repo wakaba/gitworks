@@ -112,7 +112,7 @@ sub run_system_command_as_cv {
                 sha => $self->revision,
                 branch => $self->branch,
                 state => $failed ? COMMIT_STATUS_FAILURE : COMMIT_STATUS_SUCCESS,
-                target_url => $log_info->{logs_url},
+                target_url => $self->url_prefix . $log_info->{logs_url},
                 description => $title,
             )->cb(sub { $cv->send(!$failed) });
         });
@@ -137,7 +137,7 @@ sub report_failure_as_cv {
         sha => $self->revision,
         branch => $self->branch,
         state => COMMIT_STATUS_FAILURE,
-        target_url => $log_info->{logs_url},
+        target_url => $self->url_prefix . $log_info->{logs_url},
         description => $title,
     )->cb(sub { $cv->send });
 
@@ -193,6 +193,17 @@ sub cennel_jobs_url {
 
 sub cennel_api_key {
     return $_[0]->karasuma_config->get_file_base64_text('gitworks.cennel.api_key');
+}
+
+sub url_prefix {
+    my $self = shift;
+    my $config = $self->karasuma_config;
+    my $hostname = $config->get_text('gitworks.hostname');
+    return '' unless defined $hostname;
+    return sprintf '%s://%s:%s',
+        $config->get_text('gitworks.scheme') || 'http',
+        $hostname,
+        $config->get_text('gitworks.port') || 80;
 }
 
 sub cennel_add_operation_as_cv {
