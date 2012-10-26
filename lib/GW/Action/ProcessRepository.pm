@@ -77,6 +77,9 @@ sub run_system_command_as_cv {
         my $prefix = file(__FILE__)->dir->parent->parent->parent->absolute;
         local $ENV{PATH} = $ENV{PMBP_ORIG_PATH} || join ':', grep {not /^\Q$prefix\E\// } split /:/, $ENV{PATH};
         local $ENV{PERL5LIB} = '';
+        local $ENV{GITWORKS_REPOSITORY_URL} = $self->url;
+        local $ENV{GITWORKS_REPOSITORY_BRANCH} = $self->branch;
+        local $ENV{GITWORKS_REPOSITORY_SHA} = $self->revision;
         run_cmd(
             $command,
             '>' => sub {
@@ -111,7 +114,7 @@ sub run_system_command_as_cv {
                 state => $failed ? COMMIT_STATUS_FAILURE : COMMIT_STATUS_SUCCESS,
                 target_url => $log_info->{logs_url},
                 description => $title,
-            )->cb(sub { $cv->send });
+            )->cb(sub { $cv->send(!$failed) });
         });
     });
 
@@ -232,10 +235,11 @@ sub run_action_as_cv {
             my $method = $action =~ /delete/
                 ? 'delete_repository' : 'add_repository';
             $edit_action->$method($self->url);
+            $cv->send(1);
         } else {
-            warn "|set_name| is not specified";
+            warn "|set_name| is not specified"; # XXX error report
+            $cv->send(0);
         }
-        $cv->send;
         return $cv;
     }
 
@@ -245,7 +249,7 @@ sub run_action_as_cv {
                 "cd @{[quotemeta $self->temp_repo_d]} && (make @{[quotemeta $args->{rule}]})",
                 "make $args->{rule}",
             )->cb(sub {
-                $cv->send;
+                $cv->send($_[0]->recv);
             });
         } elsif ($action eq 'command') {
             my $command = $args->{command};
@@ -253,17 +257,17 @@ sub run_action_as_cv {
             if ($command =~ /\A[0-9A-Za-z_]+\z/ and
                 -f (my $command_f = $self->get_command_f($command))) {
                 $self->run_system_command_as_cv(
-                    "cd @{[quotemeta $self->temp_repo_d]} && sh @{[$command_f->absolute]}",
+                    "cd @{[quotemeta $self->temp_repo_d]} && sh @{[$command_f->absolute]} @{[map { quotemeta } @{$args->{command_args} or []}]}",
                     $command,
                 )->cb(sub {
-                    $cv->send;
+                    $cv->send($_[0]->recv);
                 });
             } else {
                 $self->report_failure_as_cv(
                     "Command |$command| (@{[$self->get_command_f($command)]}) is not defined",
                     $command,
                 )->cb(sub {
-                    $cv->send;
+                    $cv->send(0);
                 });
             }
         } elsif ($action eq 'cennel.add-operations') {
@@ -273,7 +277,7 @@ sub run_action_as_cv {
                 "Action |$action| is not supported",
                 $action,
             )->cb(sub {
-                $cv->send;
+                $cv->send(0);
             });
         }
     });
