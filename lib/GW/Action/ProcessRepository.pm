@@ -198,12 +198,12 @@ sub cennel_api_key {
 sub url_prefix {
     my $self = shift;
     my $config = $self->karasuma_config;
-    my $hostname = $config->get_text('gitworks.hostname');
+    my $hostname = $config->get_text('gitworks.web.hostname');
     return '' unless defined $hostname;
     return sprintf '%s://%s:%s',
-        $config->get_text('gitworks.scheme') || 'http',
+        $config->get_text('gitworks.web.scheme') || 'http',
         $hostname,
-        $config->get_text('gitworks.port') || 80;
+        $config->get_text('gitworks.web.port') || 80;
 }
 
 sub cennel_add_operation_as_cv {
