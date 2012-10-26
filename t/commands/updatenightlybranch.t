@@ -7,12 +7,35 @@ use warnings;
 use Test::GW;
 use File::Temp qw(tempdir);
 use Path::Class;
+use GW::MySQL;
+use Karasuma::Config::JSON;
 use GW::Action::ProcessRepository;
 
 my $commands_d = file(__FILE__)->dir->parent->parent->subdir('config', 'commands');
 my $DEBUG = 0;
 
 my $cached_d = dir(tempdir(CLEANUP => !$DEBUG));
+my $mysql_cv;
+my $mysql = sub {
+    return $mysql_cv ||= mysql_as_cv;
+};
+
+sub run_command (&$$) {
+    my ($code, $c, $job) = @_;
+    my $config = Karasuma::Config::JSON->new_from_config_data({
+        'gitworks.githookhub.hook_url' => q<http://GHH/hook>,
+    });
+    my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
+    $action->command_dir_d($commands_d);
+    $action->dbreg($dbreg);
+    $action->karasuma_config($config);
+    $action->run_action_as_cv->cb(sub {
+        test {
+            $code->();
+        } $c;
+    });
+}
 
 test {
     my $c = shift;
@@ -21,9 +44,12 @@ test {
     system "cd $temp_d && git init && echo 'hoge:\n\techo 1234 > foo.txt' > Makefile && git add Makefile && git commit -m New";
     my $rev = `cd $temp_d && git rev-parse HEAD`;
 
-    my $temp2_d = dir(tempdir(CLEANUP => !$DEBUG));
-
-    my $job = {
+    run_command (sub {
+        is `cd $temp_d && git rev-parse HEAD`, $rev;
+        is `cd $temp_d && git rev-parse nightly`, $rev;
+        done $c;
+        undef $c;
+    }, $c, {
         repository_url => $temp_d->stringify,
         repository_branch => 'master',
         repository_revision => $rev,
@@ -31,18 +57,8 @@ test {
         args => {
             command => 'updatenightlybranch',
         },
-    };
-    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
-    $action->command_dir_d($commands_d);
-    $action->run_action_as_cv->cb(sub {
-        test {
-            is `cd $temp_d && git rev-parse HEAD`, $rev;
-            is `cd $temp_d && git rev-parse nightly`, $rev;
-            done $c;
-            undef $c;
-        } $c;
     });
-} n => 2, name => 'noop';
+} n => 2, name => 'noop', wait => $mysql;
 
 test {
     my $c = shift;
@@ -64,7 +80,15 @@ test {
     system "cd $temp_d && git checkout master && git push origin master";
     system "cd $temp_d && git checkout nightly && git push origin nightly";
 
-    my $job = {
+    run_command {
+        isnt `cd $temp0_d && git rev-parse nightly`, $rev2;
+        isnt `cd $temp0_d && git rev-parse nightly`, $rev3;
+        system "cd $temp_d && git checkout nightly && git pull origin nightly";
+        is scalar $temp_d->file('abc')->slurp, "1234\n";
+        is scalar $temp_d->file('xyz')->slurp, "xyzw\n";
+        done $c;
+        undef $c;
+    } $c, {
         repository_url => $temp0_d->stringify,
         repository_branch => 'master',
         repository_revision => $rev,
@@ -73,20 +97,7 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
-    $action->command_dir_d($commands_d);
-    $action->run_action_as_cv->cb(sub {
-        test {
-            isnt `cd $temp0_d && git rev-parse nightly`, $rev2;
-            isnt `cd $temp0_d && git rev-parse nightly`, $rev3;
-            system "cd $temp_d && git checkout nightly && git pull origin nightly";
-            is scalar $temp_d->file('abc')->slurp, "1234\n";
-            is scalar $temp_d->file('xyz')->slurp, "xyzw\n";
-            done $c;
-            undef $c;
-        } $c;
-    });
-} n => 4, name => 'nightly branch found';
+} n => 4, name => 'nightly branch found', wait => $mysql;
 
 test {
     my $c = shift;
@@ -108,7 +119,14 @@ test {
     system "cd $temp_d && git checkout master && git push origin master";
     system "cd $temp_d && git checkout nightly && git push origin nightly";
 
-    my $job = {
+    run_command {
+        isnt `cd $temp0_d && git rev-parse nightly`, $rev2;
+        isnt `cd $temp0_d && git rev-parse nightly`, $rev3;
+        system "cd $temp_d && git checkout nightly && git pull origin nightly";
+        is scalar $temp_d->file('abc')->slurp, "1234\n";
+        done $c;
+        undef $c;
+    } $c, {
         repository_url => $temp0_d->stringify,
         repository_branch => 'master',
         repository_revision => $rev,
@@ -117,19 +135,7 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
-    $action->command_dir_d($commands_d);
-    $action->run_action_as_cv->cb(sub {
-        test {
-            isnt `cd $temp0_d && git rev-parse nightly`, $rev2;
-            isnt `cd $temp0_d && git rev-parse nightly`, $rev3;
-            system "cd $temp_d && git checkout nightly && git pull origin nightly";
-            is scalar $temp_d->file('abc')->slurp, "1234\n";
-            done $c;
-            undef $c;
-        } $c;
-    });
-} n => 3, name => 'conflict';
+} n => 3, name => 'conflict', wait => $mysql;
 
 test {
     my $c = shift;
@@ -143,9 +149,12 @@ test {
     system "cd $temp_d && git submodule add $temp3_d temp3 && git commit -m submodule && git push";
     my $rev = `cd $temp_d && git rev-parse HEAD`;
 
-    my $temp2_d = dir(tempdir(CLEANUP => !$DEBUG));
-
-    my $job = {
+    run_command {
+        is `cd $temp_d && git rev-parse HEAD`, $rev;
+        is `cd $temp_d && git rev-parse nightly`, $rev;
+        done $c;
+        undef $c;
+    } $c, {
         repository_url => $temp_d->stringify,
         repository_branch => 'master',
         repository_revision => $rev,
@@ -154,17 +163,7 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
-    $action->command_dir_d($commands_d);
-    $action->run_action_as_cv->cb(sub {
-        test {
-            is `cd $temp_d && git rev-parse HEAD`, $rev;
-            is `cd $temp_d && git rev-parse nightly`, $rev;
-            done $c;
-            undef $c;
-        } $c;
-    });
-} n => 2, name => 'submodule noop';
+} n => 2, name => 'submodule noop', wait => $mysql;
 
 test {
     my $c = shift;
@@ -181,9 +180,15 @@ test {
 
     system "cd $temp3_d && echo 124 > bar.txt && git add bar.txt && git commit -m bar.txt";
 
-    my $temp2_d = dir(tempdir(CLEANUP => !$DEBUG));
-
-    my $job = {
+    run_command {
+        is `cd $temp_d && git rev-parse master`, $rev;
+        isnt `cd $temp_d && git rev-parse nightly`, $rev;
+        system "cd $temp_d && git checkout nightly && git submodule update --init";
+        isnt `cd $temp_d/temp3 && git rev-parse HEAD`, $rev3;
+        ok -f "$temp_d/temp3/bar.txt";
+        done $c;
+        undef $c;
+    } $c, {
         repository_url => $temp_d->stringify,
         repository_branch => 'master',
         repository_revision => $rev,
@@ -192,20 +197,7 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
-    $action->command_dir_d($commands_d);
-    $action->run_action_as_cv->cb(sub {
-        test {
-            is `cd $temp_d && git rev-parse master`, $rev;
-            isnt `cd $temp_d && git rev-parse nightly`, $rev;
-            system "cd $temp_d && git checkout nightly && git submodule update --init";
-            isnt `cd $temp_d/temp3 && git rev-parse HEAD`, $rev3;
-            ok -f "$temp_d/temp3/bar.txt";
-            done $c;
-            undef $c;
-        } $c;
-    });
-} n => 4, name => 'submodule updated';
+} n => 4, name => 'submodule updated', wait => $mysql;
 
 test {
     my $c = shift;
@@ -242,11 +234,17 @@ test {
     my $rev = `cd $temp_d && git rev-parse HEAD`;
     my $rev3 = `cd $temp_d/temp3 && git rev-parse HEAD`;
 
-#die $temp_d;
-
-    my $temp2_d = dir(tempdir(CLEANUP => !$DEBUG));
-
-    my $job = {
+    run_command {
+        system "cd $temp_d && git checkout master && git submodule update --init";
+        is `cd $temp_d && git rev-parse master`, $rev;
+        is `cd $temp_d/temp3 && git rev-parse HEAD`, $rev3;
+        system "cd $temp_d && git checkout nightly && git submodule update --init";
+        isnt `cd $temp_d && git rev-parse nightly`, $rev;
+        isnt `cd $temp_d && git rev-parse nightly`, $rev2;
+        is `cd $temp_d/temp3 && git rev-parse HEAD`, $rev5;
+        done $c;
+        undef $c;
+    } $c, {
         repository_url => $temp_d->stringify,
         repository_branch => 'master',
         repository_revision => $rev,
@@ -255,22 +253,7 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
-    $action->command_dir_d($commands_d);
-    $action->run_action_as_cv->cb(sub {
-        test {
-            system "cd $temp_d && git checkout master && git submodule update --init";
-            is `cd $temp_d && git rev-parse master`, $rev;
-            is `cd $temp_d/temp3 && git rev-parse HEAD`, $rev3;
-            system "cd $temp_d && git checkout nightly && git submodule update --init";
-            isnt `cd $temp_d && git rev-parse nightly`, $rev;
-            isnt `cd $temp_d && git rev-parse nightly`, $rev2;
-            is `cd $temp_d/temp3 && git rev-parse HEAD`, $rev5;
-            done $c;
-            undef $c;
-        } $c;
-    });
-} n => 5, name => 'submodule conflict';
+} n => 5, name => 'submodule conflict', wait => $mysql;
 
 test {
     my $c = shift;
@@ -279,9 +262,13 @@ test {
     system "cd $temp_d && git init && echo 'autoupdatenightly:\n\techo 1234 > foo.txt' > Makefile && git add Makefile && git commit -m New";
     my $rev = `cd $temp_d && git rev-parse HEAD`;
 
-    my $temp2_d = dir(tempdir(CLEANUP => !$DEBUG));
-
-    my $job = {
+    run_command {
+        is `cd $temp_d && git rev-parse master`, $rev;
+        is `cd $temp_d && git rev-parse nightly`, $rev;
+        ok !-f "$temp_d/foo.txt";
+        done $c;
+        undef $c;
+    } $c, {
         repository_url => $temp_d->stringify,
         repository_branch => 'master',
         repository_revision => $rev,
@@ -290,18 +277,7 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
-    $action->command_dir_d($commands_d);
-    $action->run_action_as_cv->cb(sub {
-        test {
-            is `cd $temp_d && git rev-parse master`, $rev;
-            is `cd $temp_d && git rev-parse nightly`, $rev;
-            ok !-f "$temp_d/foo.txt";
-            done $c;
-            undef $c;
-        } $c;
-    });
-} n => 3, name => 'make no change';
+} n => 3, name => 'make no change', wait => $mysql;
 
 test {
     my $c = shift;
@@ -310,9 +286,14 @@ test {
     system "cd $temp_d && git init && echo 'autoupdatenightly:\n\techo 1234 > foo.txt\n\tgit add foo.txt' > Makefile && git add Makefile && git commit -m New";
     my $rev = `cd $temp_d && git rev-parse HEAD`;
 
-    my $temp2_d = dir(tempdir(CLEANUP => !$DEBUG));
-
-    my $job = {
+    run_command {
+        is `cd $temp_d && git rev-parse master`, $rev;
+        isnt `cd $temp_d && git rev-parse nightly`, $rev;
+        system "cd $temp_d && git checkout nightly";
+        ok -f "$temp_d/foo.txt";
+        done $c;
+        undef $c;
+    } $c, {
         repository_url => $temp_d->stringify,
         repository_branch => 'master',
         repository_revision => $rev,
@@ -321,30 +302,23 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
-    $action->command_dir_d($commands_d);
-    $action->run_action_as_cv->cb(sub {
-        test {
-            is `cd $temp_d && git rev-parse master`, $rev;
-            isnt `cd $temp_d && git rev-parse nightly`, $rev;
-            system "cd $temp_d && git checkout nightly";
-            ok -f "$temp_d/foo.txt";
-            done $c;
-            undef $c;
-        } $c;
-    });
-} n => 3, name => 'make changed';
+} n => 3, name => 'make changed', wait => $mysql;
 
 test {
     my $c = shift;
 
     my $temp_d = dir(tempdir(CLEANUP => !$DEBUG));
-    system "cd $temp_d && git init && echo 'autoupdatenightly:\n\techo 1234 > foo.txt\n\tgit add foo.txt\n\tfalse\n > Makefile && git add Makefile && git commit -m New";
+    system "cd $temp_d && git init && echo 'autoupdatenightly:\n\techo 1234 > foo.txt\n\tgit add foo.txt\n\tfalse\n' > Makefile && git add Makefile && git commit -m New";
     my $rev = `cd $temp_d && git rev-parse HEAD`;
 
-    my $temp2_d = dir(tempdir(CLEANUP => !$DEBUG));
-
-    my $job = {
+    run_command {
+        is `cd $temp_d && git rev-parse master`, $rev;
+        is `cd $temp_d && git rev-parse nightly`, $rev;
+        system "cd $temp_d && git checkout nightly";
+        ok !-f "$temp_d/foo.txt";
+        done $c;
+        undef $c;
+    } $c, {
         repository_url => $temp_d->stringify,
         repository_branch => 'master',
         repository_revision => $rev,
@@ -353,19 +327,7 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
-    $action->command_dir_d($commands_d);
-    $action->run_action_as_cv->cb(sub {
-        test {
-            is `cd $temp_d && git rev-parse master`, $rev;
-            is `cd $temp_d && git rev-parse nightly`, $rev;
-            system "cd $temp_d && git checkout nightly";
-            ok !-f "$temp_d/foo.txt";
-            done $c;
-            undef $c;
-        } $c;
-    });
-} n => 3, name => 'make died';
+} n => 3, name => 'make died', wait => $mysql;
 
 test {
     my $c = shift;
@@ -374,9 +336,14 @@ test {
     system "cd $temp_d && git init && echo 'autoupdatenightly\n\techo 1234 > foo.txt\n\tgit add foo.txt' > Makefile && git add Makefile && git commit -m New";
     my $rev = `cd $temp_d && git rev-parse HEAD`;
 
-    my $temp2_d = dir(tempdir(CLEANUP => !$DEBUG));
-
-    my $job = {
+    run_command {
+        is `cd $temp_d && git rev-parse master`, $rev;
+        is `cd $temp_d && git rev-parse nightly`, $rev;
+        system "cd $temp_d && git checkout nightly";
+        ok !-f "$temp_d/foo.txt";
+        done $c;
+        undef $c;
+    } $c, {
         repository_url => $temp_d->stringify,
         repository_branch => 'master',
         repository_revision => $rev,
@@ -385,18 +352,6 @@ test {
             command => 'updatenightlybranch',
         },
     };
-    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
-    $action->command_dir_d($commands_d);
-    $action->run_action_as_cv->cb(sub {
-        test {
-            is `cd $temp_d && git rev-parse master`, $rev;
-            is `cd $temp_d && git rev-parse nightly`, $rev;
-            system "cd $temp_d && git checkout nightly";
-            ok !-f "$temp_d/foo.txt";
-            done $c;
-            undef $c;
-        } $c;
-    });
-} n => 3, name => 'make broken Makefile';
+} n => 3, name => 'make broken Makefile', wait => $mysql;
 
 run_tests;
