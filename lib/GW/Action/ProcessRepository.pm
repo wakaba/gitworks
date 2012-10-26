@@ -126,50 +126,6 @@ sub report_failure_as_cv {
     return $cv;
 }
 
-sub run_test_as_cv {
-    my $self = shift;
-    my $cv = AE::cv;
-    my $d = $self->temp_repo_d;
-    my $onmessage = $self->onmessage;
-    my $command = "cd \Q$d\E && make test 2>&1";
-    my $output = $command . "\n";
-    my $start_time = time;
-    my $prefix = file(__FILE__)->dir->parent->parent->parent->absolute;
-    local $ENV{PATH} = join ':', grep {not /^\Q$prefix\E\// } split /:/, $ENV{PATH};
-    local $ENV{PERL5LIB} = '';
-    run_cmd(
-        $command,
-        '>' => sub {
-            if (defined $_[0]) {
-                $output .= $_[0];
-                $onmessage->($_[0]);
-            }
-        },
-    )->cb(sub {
-        my $return = $_[0]->recv;
-        my $failed = $return >> 8;
-        my $end_time = time;
-        $output .= sprintf "Exited with status %d (%.2fs)\n",
-            $return >> 8, $end_time - $start_time;
-        
-        my $title = 'GitWorks repository test - ' . ($failed ? 'Failed' : 'Succeeded');
-        my $log_info = $self->log_action->add_log(
-            branch => $self->branch,
-            sha => $self->revision,
-            title => $title,
-            data => $output,
-        );
-        $self->commit_status_action->add_commit_status_as_cv(
-            sha => $self->revision,
-            branch => $self->branch,
-            state => $failed ? COMMIT_STATUS_FAILURE : COMMIT_STATUS_SUCCESS,
-            target_url => $log_info->{logs_url},
-            description => $title,
-        )->cb(sub { $cv->send });
-    });
-    return $cv;
-}
-
 sub cennel_add_operations_as_cv {
     my $self = shift;
     my $cv = AE::cv;
@@ -295,8 +251,6 @@ sub run_action_as_cv {
                     $cv->send;
                 });
             }
-        } elsif ($action eq 'run-test') {
-            $self->run_test_as_cv->cb(sub { $cv->send });
         } elsif ($action eq 'cennel.add-operations') {
             $self->cennel_add_operations_as_cv->cb(sub { $cv->send });
         } else {
