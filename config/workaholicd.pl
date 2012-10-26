@@ -30,13 +30,13 @@ my @task = (
         actions => [{
             db => 'gitworks',
             table_name => 'job',,
-            sql => 'SELECT id FROM :table_name:id WHERE process_started < ? AND action_type != "run-test" AND action_type != "command" LIMIT 1',
+            sql => 'SELECT id FROM :table_name:id WHERE process_started < ? AND action_type != "make" AND action_type != "command" LIMIT 1',
             get_sql_args => sub {
                 return {process_started => time - 10 * 60};
             },
             url => $url,
             basic_auth => [api_key => $api_key],
-            args => {not_action_types => ['run-test', 'command']},
+            args => {not_action_types => ['make', 'command']},
         }],
     },
     {
@@ -46,29 +46,13 @@ my @task = (
         actions => [{
             db => 'gitworks',
             table_name => 'job',,
-            sql => 'SELECT id FROM :table_name:id WHERE process_started < ? AND action_type = "command" LIMIT 1',
+            sql => 'SELECT id FROM :table_name:id WHERE process_started < ? AND action_type IN ("command", "make") LIMIT 1',
             get_sql_args => sub {
                 return {process_started => time - 10 * 60};
             },
             url => $url,
             basic_auth => [api_key => $api_key],
-            args => {action_types => ['command']},
-        }],
-    },
-    {
-        interval => 10,
-        timeout => 2*60*60,
-        dsns => $dsns,
-        actions => [{
-            db => 'gitworks',
-            table_name => 'job',,
-            sql => 'SELECT id FROM :table_name:id WHERE process_started < ? AND action_type = "run-test" LIMIT 1',
-            get_sql_args => sub {
-                return {process_started => time - 50 * 60};
-            },
-            url => $url,
-            basic_auth => [api_key => $api_key],
-            args => {action_types => ['run-test']},
+            args => {action_types => ['command', 'make']},
         }],
     },
 );
