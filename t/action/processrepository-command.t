@@ -62,12 +62,18 @@ test {
         test {
             my $cs_loader = GW::Loader::CommitStatuses->new_from_dbreg_and_repository_url($dbreg, $temp_d->stringify);
             my $cses = $cs_loader->get_commit_statuses($rev);
-            is $cses->length, 1;
+            is $cses->length, 2;
+
             is $cses->[0]->{sha}, $rev;
             $cses->[0]->{target_url} =~ s/log-\d+$/log-hoge/;
             is $cses->[0]->{target_url}, '/repos/logs?repository_url=' . (percent_encode_c $temp_d) . '&sha=' . $rev . '#log-hoge';
             is $cses->[0]->{description}, 'GitWorks action - hoge - Succeeded';
             is $cses->[0]->{state}, COMMIT_STATUS_SUCCESS;
+
+            is $cses->[1]->{sha}, $rev;
+            is $cses->[1]->{target_url}, undef;
+            is $cses->[1]->{description}, 'GitWorks action - hoge - Started';
+            is $cses->[1]->{state}, COMMIT_STATUS_PENDING;
 
             my $log_loader = GW::Loader::Logs->new_from_dbreg_and_repository_url($dbreg, $temp_d->stringify);
             my $logs = $log_loader->get_logs(sha => $rev);
@@ -82,7 +88,7 @@ test {
             undef $c;
         } $c;
     });
-} n => 11, name => 'command found, ok', wait => $mysql;
+} n => 15, name => 'command found, ok', wait => $mysql;
 
 test {
     my $c = shift;
@@ -126,12 +132,18 @@ test {
         test {
             my $cs_loader = GW::Loader::CommitStatuses->new_from_dbreg_and_repository_url($dbreg, $temp_d->stringify);
             my $cses = $cs_loader->get_commit_statuses($rev);
-            is $cses->length, 1;
+            is $cses->length, 2;
+
             is $cses->[0]->{sha}, $rev;
             $cses->[0]->{target_url} =~ s/log-\d+$/log-hoge/;
             is $cses->[0]->{target_url}, '/repos/logs?repository_url=' . (percent_encode_c $temp_d) . '&sha=' . $rev . '#log-hoge';
             is $cses->[0]->{description}, 'GitWorks action - hoge - Failed';
             is $cses->[0]->{state}, COMMIT_STATUS_FAILURE;
+
+            is $cses->[1]->{sha}, $rev;
+            is $cses->[1]->{target_url}, undef;
+            is $cses->[1]->{description}, 'GitWorks action - hoge - Started';
+            is $cses->[1]->{state}, COMMIT_STATUS_PENDING;
 
             my $log_loader = GW::Loader::Logs->new_from_dbreg_and_repository_url($dbreg, $temp_d->stringify);
             my $logs = $log_loader->get_logs(sha => $rev);
@@ -146,7 +158,7 @@ test {
             undef $c;
         } $c;
     });
-} n => 11, name => 'command found, failed', wait => $mysql;
+} n => 15, name => 'command found, failed', wait => $mysql;
 
 test {
     my $c = shift;

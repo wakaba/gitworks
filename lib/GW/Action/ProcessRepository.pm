@@ -56,50 +56,65 @@ sub get_command_f {
 sub run_system_command_as_cv {
     my ($self, $command, $label) = @_;
     my $cv = AE::cv;
-    my $d = $self->temp_repo_d;
-    my $onmessage = $self->onmessage;
-    my $output = $label . "\n" .
-        '$ ' . (ref $command ? join ' ', @$command : $command) . "\n";
-    my $start_time = time;
-    my $prefix = file(__FILE__)->dir->parent->parent->parent->absolute;
-    local $ENV{PATH} = $ENV{PMBP_ORIG_PATH} || join ':', grep {not /^\Q$prefix\E\// } split /:/, $ENV{PATH};
-    local $ENV{PERL5LIB} = '';
-    run_cmd(
-        $command,
-        '>' => sub {
-            if (defined $_[0]) {
-                $output .= $_[0];
-                $onmessage->($_[0]);
-            }
-        },
-        '2>' => sub {
-            if (defined $_[0]) {
-                $output .= $_[0];
-                $onmessage->($_[0]);
-            }
-        },
-    )->cb(sub {
-        my $return = $_[0]->recv;
-        my $failed = $return >> 8;
-        my $end_time = time;
-        $output .= sprintf "Exited with status %d (%.2fs)\n",
-            $return >> 8, $end_time - $start_time;
-        
-        my $title = 'GitWorks action - ' . $label . ' - ' . ($failed ? 'Failed' : 'Succeeded');
-        my $log_info = $self->log_action->add_log(
-            branch => $self->branch,
-            sha => $self->revision,
-            title => $title,
-            data => $output,
-        );
+
+    my $cv1 = AE::cv;
+    {
+        my $title = 'GitWorks action - ' . $label . ' - Started';
         $self->commit_status_action->add_commit_status_as_cv(
             sha => $self->revision,
             branch => $self->branch,
-            state => $failed ? COMMIT_STATUS_FAILURE : COMMIT_STATUS_SUCCESS,
-            target_url => $log_info->{logs_url},
+            state => COMMIT_STATUS_PENDING,
             description => $title,
-        )->cb(sub { $cv->send });
+        )->cb(sub { $cv1->send });
+    }
+
+    $cv1->cb(sub {
+        my $d = $self->temp_repo_d;
+        my $onmessage = $self->onmessage;
+        my $output = $label . "\n" .
+            '$ ' . (ref $command ? join ' ', @$command : $command) . "\n";
+        my $start_time = time;
+        my $prefix = file(__FILE__)->dir->parent->parent->parent->absolute;
+        local $ENV{PATH} = $ENV{PMBP_ORIG_PATH} || join ':', grep {not /^\Q$prefix\E\// } split /:/, $ENV{PATH};
+        local $ENV{PERL5LIB} = '';
+        run_cmd(
+            $command,
+            '>' => sub {
+                if (defined $_[0]) {
+                    $output .= $_[0];
+                    $onmessage->($_[0]);
+                }
+            },
+            '2>' => sub {
+                if (defined $_[0]) {
+                    $output .= $_[0];
+                    $onmessage->($_[0]);
+                }
+            },
+        )->cb(sub {
+            my $return = $_[0]->recv;
+            my $failed = $return >> 8;
+            my $end_time = time;
+            $output .= sprintf "Exited with status %d (%.2fs)\n",
+                $return >> 8, $end_time - $start_time;
+        
+            my $title = 'GitWorks action - ' . $label . ' - ' . ($failed ? 'Failed' : 'Succeeded');
+            my $log_info = $self->log_action->add_log(
+                branch => $self->branch,
+                sha => $self->revision,
+                title => $title,
+                data => $output,
+            );
+            $self->commit_status_action->add_commit_status_as_cv(
+                sha => $self->revision,
+                branch => $self->branch,
+                state => $failed ? COMMIT_STATUS_FAILURE : COMMIT_STATUS_SUCCESS,
+                target_url => $log_info->{logs_url},
+                description => $title,
+            )->cb(sub { $cv->send });
+        });
     });
+
     return $cv;
 }
 
