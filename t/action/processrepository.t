@@ -8,11 +8,20 @@ use Test::GW;
 use File::Temp qw(tempdir);
 use Path::Class;
 use GW::Action::ProcessRepository;
+use GW::Defs::Statuses;
+use GW::MySQL;
+use Karasuma::Config::JSON;
 
 my $DEBUG = $ENV{GW_DEBUG};
 
+my $mysql = mysql_as_cv;
+
 test {
     my $c = shift;
+    my $config = Karasuma::Config::JSON->new_from_config_data({
+        'gitworks.githookhub.hook_url' => q<http://GHH/hook>,
+    });
+    my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
     my $temp_d = dir(tempdir(CLEANUP => 1));
     system "cd $temp_d && git init && echo 'hoge:\n\techo 1234 > foo.txt' > Makefile && git add Makefile && git commit -m New";
@@ -30,16 +39,22 @@ test {
         },
     };
     my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
+    $action->dbreg($dbreg);
+    $action->karasuma_config($config);
     $action->run_action_as_cv->cb(sub {
         test {
             is scalar $action->temp_repo_d->file('foo.txt')->slurp, "1234\n";
             done $c;
         } $c;
     });
-} n => 1;
+} n => 1, wait => $mysql;
 
 test {
     my $c = shift;
+    my $config = Karasuma::Config::JSON->new_from_config_data({
+        'gitworks.githookhub.hook_url' => q<http://GHH/hook>,
+    });
+    my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
     my $temp_d = dir(tempdir(CLEANUP => 1));
     system "cd $temp_d && git init && echo 'hoge:\n\techo 1234 > foo.txt' > Makefile && git add Makefile && git commit -m New";
@@ -58,16 +73,22 @@ test {
         },
     };
     my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
+    $action->dbreg($dbreg);
+    $action->karasuma_config($config);
     $action->run_action_as_cv->cb(sub {
         test {
             is scalar $action->temp_repo_d->file('foo.txt')->slurp, "1234\n";
             done $c;
         } $c;
     });
-} n => 1;
+} n => 1, wait => $mysql;
 
 test {
     my $c = shift;
+    my $config = Karasuma::Config::JSON->new_from_config_data({
+        'gitworks.githookhub.hook_url' => q<http://GHH/hook>,
+    });
+    my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
     my $temp_d = dir(tempdir(CLEANUP => 1));
     system "cd $temp_d && git init && echo 'hoge:\n\techo 1234 > foo.txt' > Makefile && git add Makefile && git commit -m New";
@@ -89,16 +110,22 @@ test {
     };
     my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
     $action->command_dir_d($temp2_d);
+    $action->dbreg($dbreg);
+    $action->karasuma_config($config);
     $action->run_action_as_cv->cb(sub {
         test {
             is scalar $action->temp_repo_d->file('foo.txt')->slurp, "5566\n";
             done $c;
         } $c;
     });
-} n => 1, name => 'command found';
+} n => 1, name => 'command found', wait => $mysql;
 
 test {
     my $c = shift;
+    my $config = Karasuma::Config::JSON->new_from_config_data({
+        'gitworks.githookhub.hook_url' => q<http://GHH/hook>,
+    });
+    my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
     my $temp_d = dir(tempdir(CLEANUP => 1));
     system "cd $temp_d && git init && echo 'hoge:\n\techo 1234 > foo.txt' > Makefile && git add Makefile && git commit -m New";
@@ -118,16 +145,22 @@ test {
     };
     my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
     $action->command_dir_d($temp2_d);
+    $action->dbreg($dbreg);
+    $action->karasuma_config($config);
     $action->run_action_as_cv->cb(sub {
         test {
             ok !-f $action->temp_repo_d->file('foo.txt');
             done $c;
         } $c;
     });
-} n => 1, name => 'command not found';
+} n => 1, name => 'command not found', wait => $mysql;
 
 test {
     my $c = shift;
+    my $config = Karasuma::Config::JSON->new_from_config_data({
+        'gitworks.githookhub.hook_url' => q<http://GHH/hook>,
+    });
+    my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
     my $temp_d = dir(tempdir(CLEANUP => 1));
     system "cd $temp_d && git init && echo 'hoge:\n\techo 1234 > foo.txt' > Makefile && git add Makefile && git commit -m New";
@@ -147,6 +180,8 @@ test {
 
     my $cv2 = AE::cv;
     my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
+    $action->dbreg($dbreg);
+    $action->karasuma_config($config);
     $action->run_action_as_cv->cb(sub {
         test {
             ok -f $action->cached_repo_d->file('config');
@@ -161,6 +196,8 @@ test {
         my $rev2 = `cd $temp_d && git rev-parse HEAD`;
         $job->{repository_revision} = $rev2;
         my $action2 = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
+        $action2->dbreg($dbreg);
+        $action2->karasuma_config($config);
         is $action2->cached_repo_d->stringify, $action->cached_repo_d->stringify;
         $action2->run_action_as_cv->cb(sub {
             test {
@@ -175,6 +212,8 @@ test {
     $cv3->cb(sub {
         $job->{repository_revision} = $rev;
         my $action3 = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
+        $action3->dbreg($dbreg);
+        $action3->karasuma_config($config);
         $action3->run_action_as_cv->cb(sub {
             test {
                 ok -f $action3->cached_repo_d->file('config');
@@ -190,10 +229,14 @@ test {
             undef $c;
         } $c;
     });
-} n => 7, name => 'cached repo';
+} n => 7, name => 'cached repo', wait => $mysql;
 
 test {
     my $c = shift;
+    my $config = Karasuma::Config::JSON->new_from_config_data({
+        'gitworks.githookhub.hook_url' => q<http://GHH/hook>,
+    });
+    my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
     my $temp_d = dir(tempdir(CLEANUP => 1));
     system "cd $temp_d && git init && echo 'hoge:\n\techo 1234 > foo.txt' > Makefile && git add Makefile && git commit -m New";
@@ -215,6 +258,8 @@ test {
     };
     my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
     $action->command_dir_d($temp2_d);
+    $action->dbreg($dbreg);
+    $action->karasuma_config($config);
     $action->run_action_as_cv->cb(sub {
         test {
             my $temp_d = $action->temp_repo_d;
@@ -230,6 +275,6 @@ test {
             };
         } $c;
     });
-} n => 1, name => 'temp directory deleted';
+} n => 1, name => 'temp directory deleted', wait => $mysql;
 
 run_tests;

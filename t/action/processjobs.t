@@ -10,6 +10,7 @@ use File::Temp qw(tempdir);
 use GW::MySQL;
 use GW::Action::InsertJob;
 use GW::Action::ProcessJobs;
+use Karasuma::Config::JSON;
 
 test {
     my $c = shift;
@@ -108,6 +109,9 @@ test {
     my $c = shift;
 
     my $reg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+    my $config = Karasuma::Config::JSON->new_from_config_data({
+        'gitworks.githookhub.hook_url' => q<http://GHH/hook>,
+    });
 
     my $temp_d = dir(tempdir(CLEANUP => 1));
     my $temp2_d = dir(tempdir(CLEANUP => 1));
@@ -125,6 +129,7 @@ test {
     my $cached_d = dir(tempdir(CLEANUP => 1));
     my $process_action = GW::Action::ProcessJobs->new_from_cached_repo_set_d($cached_d);
     $process_action->db_registry($reg);
+    $process_action->karasuma_config($config);
     $process_action->process_jobs_as_cv->cb(sub {
         test {
             is scalar $temp2_d->file('foo.txt')->slurp, "1234\n";
@@ -137,6 +142,9 @@ test {
     my $c = shift;
 
     my $reg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+    my $config = Karasuma::Config::JSON->new_from_config_data({
+        'gitworks.githookhub.hook_url' => q<http://GHH/hook>,
+    });
 
     my $temp2_d = dir(tempdir(CLEANUP => 1));
     for my $i (1..2) {
@@ -156,6 +164,7 @@ test {
     my $cached_d = dir(tempdir(CLEANUP => 1));
     my $process_action = GW::Action::ProcessJobs->new_from_cached_repo_set_d($cached_d);
     $process_action->db_registry($reg);
+    $process_action->karasuma_config($config);
     $process_action->process_jobs_as_cv->cb(sub {
         $process_action->process_jobs_as_cv->cb(sub {
             test {
