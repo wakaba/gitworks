@@ -5,7 +5,7 @@ all:
 WGET = wget
 GIT = git
 
-local/bin/pmbp.pl: always
+local/bin/pmbp.pl:
 	mkdir -p local/bin
 	$(WGET) -O $@ https://github.com/wakaba/perl-setupenv/raw/master/bin/pmbp.pl
 

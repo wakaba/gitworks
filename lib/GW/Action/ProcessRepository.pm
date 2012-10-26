@@ -269,14 +269,14 @@ sub run_action_as_cv {
                 -f (my $command_f = $self->get_command_f($command))) {
                 $self->run_system_command_as_cv(
                     "cd @{[quotemeta $self->temp_repo_d]} && sh @{[$command_f->absolute]} @{[map { quotemeta } @{$args->{command_args} or []}]}",
-                    $command,
+                    (join ' ', $command, @{$args->{command_args} or []}),
                 )->cb(sub {
                     $cv->send($_[0]->recv);
                 });
             } else {
                 $self->report_failure_as_cv(
                     "Command |$command| (@{[$self->get_command_f($command)]}) is not defined",
-                    $command,
+                    (join ' ', $command, @{$args->{command_args} or []}),
                 )->cb(sub {
                     $cv->send(0);
                 });
