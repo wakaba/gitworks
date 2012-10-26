@@ -23,6 +23,9 @@ my $mysql = mysql_as_cv;
 test {
     my $c = shift;
     my $config = Karasuma::Config::JSON->new_from_config_data({
+        "gitworks.web.scheme" => "http",
+        "gitworks.web.hostname" => "192.168.131.12",
+        "gitworks.web.port" => 6016,
         'gitworks.githookhub.hook_url' => q<http://GHH/hook>,
     });
     my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
@@ -61,7 +64,7 @@ test {
             is $cses->length, 2;
             is $cses->[0]->{sha}, $rev;
             $cses->[0]->{target_url} =~ s/log-\d+$/log-hoge/;
-            is $cses->[0]->{target_url}, '/repos/logs?repository_url=' . (percent_encode_c $temp_d) . '&sha=' . $rev . '#log-hoge';
+            is $cses->[0]->{target_url}, 'http://192.168.131.12:6016/repos/logs?repository_url=' . (percent_encode_c $temp_d) . '&sha=' . $rev . '#log-hoge';
             is $cses->[0]->{description}, 'GitWorks action - make hoge - Succeeded';
             is $cses->[0]->{state}, COMMIT_STATUS_SUCCESS;
 
