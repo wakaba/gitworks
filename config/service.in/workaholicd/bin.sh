@@ -2,6 +2,8 @@
 exec 2>&1
 export GW_DSNS_JSON=@@INSTANCECONFIG@@/dsns.json
 export GW_API_KEY_FILE_NAME=@@INSTANCECONFIG@@/apikey.txt
+export KARASUMA_CONFIG_JSON=@@INSTANCECONFIG@@/@@INSTANCENAME@@.json
+export KARASUMA_CONFIG_FILE_DIR_NAME=@@LOCAL@@/keys
 export HOME=@@LOCAL@@/home
 
 export WEBUA_DEBUG=`@@ROOT@@/perl @@ROOT@@/modules/karasuma-config/bin/get-json-config.pl env.WEBUA_DEBUG text`
