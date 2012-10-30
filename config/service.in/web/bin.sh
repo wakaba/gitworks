@@ -12,4 +12,4 @@ export SQL_DEBUG=`@@ROOT@@/perl @@ROOT@@/modules/karasuma-config/bin/get-json-co
 port=`@@ROOT@@/perl @@ROOT@@/modules/karasuma-config/bin/get-json-config.pl gitworks.web.port text`
 
 exec setuidgid @@USER@@ @@ROOT@@/plackup $PLACK_COMMAND_LINE_ARGS \
-    -p @@PORT@@ @@ROOT@@/bin/server.psgi
+    -p $port @@ROOT@@/bin/server.psgi
