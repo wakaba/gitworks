@@ -302,7 +302,7 @@ test {
 
     run_command (sub {
         my $return = $_[0];
-        ok $return;
+        ok !$return;
 
         my $rev_main = `cd $repo_d && git rev-parse main`;
         chomp $rev_main;
