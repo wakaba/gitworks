@@ -1,7 +1,7 @@
-gitworks
-~~~~~~~~
+GitWorks - Do something with Git repositories
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-gitworks is a daemon with Web APIs performing predefined actions to
+GitWorks is a daemon with Web APIs performing predefined actions to
 Git repositories.
 
 * Usage
@@ -11,6 +11,10 @@ TBD
 * Dependency
 
 git(1)
+
+* See also
+
+GitHookHub <https://github.com/wakaba/githookhub>.
 
 * Author
 
