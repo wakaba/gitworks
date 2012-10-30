@@ -2,6 +2,13 @@
 <html t:params=$operation>
 <t:call x="use URL::PercentEncode qw(percent_encode_c)">
 <title t:parse>Cennel operation log - <t:text value="$operation->{operation}->{id}"></title>
+<t:call x="
+sub _datetime ($) {
+    my @time = gmtime $_[0];
+    return sprintf '%04d-%02d-%02dT%02d:%02d:%02d-00:00',
+        $time[5] + 1900, $time[4] + 1, $time[3], $time[2], $time[1], $time[0];
+}
+">
 
 <h1>Cennel operation log - <code><t:text value="$operation->{operation}->{id}"></code></h1>
 
@@ -30,22 +37,25 @@
       4 => 'Succeeded',
       5 => 'Precondition failed',
       6 => 'Skipped',
+      7 => 'Reverted',
     }->{$operation->{operation}->{status}} || $operation->{operation}->{status}
   ">)
 
   <dt>Start
-  <dd><t:text value="
-      $operation->{operation}->{start_timestamp}
-          ? scalar gmtime $operation->{operation}->{start_timestamp}
-          : ''
-  ">
+  <dd>
+    <t:if x="$operation->{operation}->{start_timestamp}">
+      <time><t:text value="_datetime $operation->{operation}->{start_timestamp}"></time>
+    <t:else>
+      -
+    </t:if>
 
   <dt>End
-  <dd><t:text value="
-      $operation->{operation}->{end_timestamp}
-          ? scalar gmtime $operation->{operation}->{end_timestamp}
-          : ''
-  ">
+  <dd>
+    <t:if x="$operation->{operation}->{end_timestamp}">
+      <time><t:text value="_datetime $operation->{operation}->{end_timestamp}"></time>
+    <t:else>
+      -
+    </t:if>
 </dl>
 
 <nav>
@@ -65,6 +75,8 @@
 
 <t:for as=$unit x="[values %{$operation->{units}}]">
   <article pl:id="'unit-' . $unit->{id}">
+    <h1>Operation unit #<t:text value="$unit->{id}"></h1>
+
     <dl>
       <dt>Operation unit ID
       <dd><a pl:href="'#unit-' . $unit->{id}"><code><t:text value="$unit->{id}"></code></a>
@@ -93,18 +105,20 @@
       ">
 
       <dt>Start
-      <dd><t:text value="
-          $unit->{start_timestamp}
-              ? scalar gmtime $unit->{start_timestamp}
-              : ''
-      ">
+      <dd>
+        <t:if x="$unit->{start_timestamp}">
+          <time><t:text value="_datetime $unit->{start_timestamp}"></time>
+        <t:else>
+          -
+        </t:if>
 
       <dt>End
-      <dd><t:text value="
-          $unit->{end_timestamp}
-              ? scalar gmtime $unit->{end_timestamp}
-              : ''
-      ">
+      <dd>
+        <t:if x="$unit->{end_timestamp}">
+          <time><t:text value="_datetime $unit->{end_timestamp}"></time>
+        <t:else>
+          -
+        </t:if>
     </dl>
 
     <article pl:id="'unit-' . $unit->{id} . '-log'">
@@ -114,3 +128,7 @@
     </section>
   </article>
 </t:for>
+
+<script src="http://suika.fam.cx/www/style/ui/time.js.u8" charset=utf-8></script><script>
+  new TER (document.body);
+</script>

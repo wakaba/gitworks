@@ -2,6 +2,13 @@
 <html t:params=$operations>
 <t:call x="use URL::PercentEncode qw(percent_encode_c)">
 <title>Cennel recent operations</title>
+<t:call x="
+sub _datetime ($) {
+    my @time = gmtime $_[0];
+    return sprintf '%04d-%02d-%02dT%02d:%02d:%02d-00:00',
+        $time[5] + 1900, $time[4] + 1, $time[3], $time[2], $time[1], $time[0];
+}
+">
 
 <h1>Cennel recent operations</h1>
 
@@ -27,18 +34,25 @@
               4 => 'Succeeded',
               5 => 'Precondition failed',
               6 => 'Skipped',
+              7 => 'Reverted',
             }->{$op->{operation}->{status}} || $op->{operation}->{status}
           ">)
         <td>
-          <p><t:text value="
-            $op->{operation}->{start_timestamp}
-                ? scalar gmtime $op->{operation}->{start_timestamp}
-                : ''
-          ">
-          <p><t:text value="
-            $op->{operation}->{end_timestamp}
-                ? scalar gmtime $op->{operation}->{end_timestamp}
-                : ''
-          ">
+          <p>
+            <t:if x="$op->{operation}->{start_timestamp}">
+              <time><t:text value="_datetime $op->{operation}->{start_timestamp}"></time>
+            <t:else>
+              -
+            </t:if>
+          <p>
+            <t:if x="$op->{operation}->{end_timestamp}">
+              <time><t:text value="_datetime $op->{operation}->{end_timestamp}"></time>
+            <t:else>
+              -
+            </t:if>
     </t:for>
 </table>
+
+<script src="http://suika.fam.cx/www/style/ui/time.js.u8" charset=utf-8></script><script>
+  new TER (document.body);
+</script>
