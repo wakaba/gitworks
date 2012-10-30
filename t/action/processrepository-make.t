@@ -264,6 +264,7 @@ test {
     my $temp_d = dir(tempdir(CLEANUP => 1));
     system "cd $temp_d && git init && echo 'hoge:\n\techo 1234 > foo.txt' > Makefile && git add Makefile && git commit -m New";
     my $rev = `cd $temp_d && git rev-parse HEAD`;
+    chomp $rev;
 
     my $cached_d = dir(tempdir(CLEANUP => !$DEBUG));
 
@@ -284,15 +285,18 @@ test {
     $action->run_action_as_cv->cb(sub {
         test {
             ok -f $action->cached_repo_d->file('config');
-            is `cd @{[$action->temp_repo_d]} && git rev-parse HEAD`, $rev;
+            my $rev1 = `cd @{[$action->temp_repo_d]} && git rev-parse HEAD`;
+            chomp $rev1;
+            is $rev1, $rev;
             $cv2->send;
         } $c;
     });
 
+    my $rev2;
     my $cv3 = AE::cv;
     $cv2->cb(sub {
         system "cd $temp_d && touch aa && git add aa && git commit -m aa";
-        my $rev2 = `cd $temp_d && git rev-parse HEAD`;
+        $rev2 = `cd $temp_d && git rev-parse HEAD`;
         $job->{repository_revision} = $rev2;
         my $action2 = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
         $action2->dbreg($dbreg);
@@ -313,10 +317,13 @@ test {
         my $action3 = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
         $action3->dbreg($dbreg);
         $action3->karasuma_config($config);
+$action3->onmessage(sub { warn $_[0] });
         $action3->run_action_as_cv->cb(sub {
             test {
                 ok -f $action3->cached_repo_d->file('config');
-                is `cd @{[$action3->temp_repo_d]} && git rev-parse HEAD`, $rev;
+                my $rev4 = `cd @{[$action3->temp_repo_d]} && git rev-parse HEAD`;
+                chomp $rev4;
+                is $rev4, $rev;
                 $cv4->send;
             } $c;
         });
