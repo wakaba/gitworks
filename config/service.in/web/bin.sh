@@ -11,5 +11,5 @@ export WEBUA_DEBUG=`@@ROOT@@/perl @@ROOT@@/modules/karasuma-config/bin/get-json-
 export SQL_DEBUG=`@@ROOT@@/perl @@ROOT@@/modules/karasuma-config/bin/get-json-config.pl env.SQL_DEBUG text`
 port=`@@ROOT@@/perl @@ROOT@@/modules/karasuma-config/bin/get-json-config.pl gitworks.web.port text`
 
-exec setuidgid @@USER@@ @@ROOT@@/plackup $PLACK_COMMAND_LINE_ARGS \
-    -p $port @@ROOT@@/bin/server.psgi
+eval "exec setuidgid @@USER@@ @@ROOT@@/plackup $PLACK_COMMAND_LINE_ARGS \
+    -p $port @@ROOT@@/bin/server.psgi"
