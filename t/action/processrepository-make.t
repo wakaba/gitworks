@@ -26,7 +26,7 @@ test {
         "gitworks.web.scheme" => "http",
         "gitworks.web.hostname" => "192.168.131.12",
         "gitworks.web.port" => 6016,
-        'gitworks.githookhub.hook_url' => q<http://GHH/hook>,
+        'gitworks.githookhub.hook_url' => q<//GHH/hook>,
     });
     my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
@@ -49,6 +49,7 @@ test {
     my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
     $action->dbreg($dbreg);
     $action->karasuma_config($config);
+    $action->onmessage(sub { warn $_[0] });
     my $cv1 = AE::cv;
     $action->run_action_as_cv->cb(sub {
         test {
@@ -91,7 +92,75 @@ test {
 test {
     my $c = shift;
     my $config = Karasuma::Config::JSON->new_from_config_data({
-        'gitworks.githookhub.hook_url' => q<http://GHH/hook>,
+        "gitworks.web.scheme" => "http",
+        "gitworks.web.hostname" => "192.168.131.12",
+        "gitworks.web.port" => 6016,
+        'gitworks.githookhub.hook_url' => q<//GHH/hook>,
+    });
+    my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+
+    my $temp_d = dir(tempdir(CLEANUP => 1));
+    system "cd $temp_d && git init && echo 'hoge:\n\techo 1234 > foo.txt' > Makefile && git add Makefile && git commit -m New";
+    my $rev = `cd $temp_d && git rev-parse HEAD`;
+    chomp $rev;
+
+    my $cached_d = dir(tempdir(CLEANUP => !$DEBUG));
+
+    my $job = {
+        repository_url => $temp_d->stringify,
+        repository_branch => 'master',
+        action_type => 'make',
+        args => {
+            rule => 'hoge',
+        },
+    };
+    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d($job, $cached_d);
+    $action->dbreg($dbreg);
+    $action->karasuma_config($config);
+    $action->onmessage(sub { warn $_[0] });
+    my $cv1 = AE::cv;
+    $action->run_action_as_cv->cb(sub {
+        test {
+            is scalar $action->temp_repo_d->file('foo.txt')->slurp, "1234\n";
+            $cv1->send;
+        } $c;
+    });
+
+    $cv1->cb(sub {
+        test {
+            my $cs_loader = GW::Loader::CommitStatuses->new_from_dbreg_and_repository_url($dbreg, $temp_d->stringify);
+            my $cses = $cs_loader->get_commit_statuses($rev);
+            is $cses->length, 2;
+            is $cses->[0]->{sha}, $rev;
+            $cses->[0]->{target_url} =~ s/log-\d+$/log-hoge/;
+            is $cses->[0]->{target_url}, 'http://192.168.131.12:6016/repos/logs?repository_url=' . (percent_encode_c $temp_d) . '&sha=' . $rev . '#log-hoge';
+            is $cses->[0]->{description}, 'GitWorks action - make hoge - Succeeded';
+            is $cses->[0]->{state}, COMMIT_STATUS_SUCCESS;
+
+            is $cses->[1]->{sha}, $rev;
+            is $cses->[1]->{target_url}, undef;
+            is $cses->[1]->{description}, 'GitWorks action - make hoge - Started';
+            is $cses->[1]->{state}, COMMIT_STATUS_PENDING;
+
+            my $log_loader = GW::Loader::Logs->new_from_dbreg_and_repository_url($dbreg, $temp_d->stringify);
+            my $logs = $log_loader->get_logs(sha => $rev);
+            is $logs->length, 1;
+            is $logs->[0]->{sha}, $rev;
+            like $logs->[0]->{data}, qr{make hoge}m;
+            like $logs->[0]->{data}, qr{^Exited with status 0}m;
+            #warn $logs->[0]->{data};
+            is $logs->[0]->{title}, 'GitWorks action - make hoge - Succeeded';
+
+            done $c;
+            undef $c;
+        } $c;
+    });
+} n => 15, wait => $mysql, name => 'ok - only branch is specified';
+
+test {
+    my $c = shift;
+    my $config = Karasuma::Config::JSON->new_from_config_data({
+        'gitworks.githookhub.hook_url' => q<//GHH/hook>,
     });
     my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
@@ -157,7 +226,7 @@ test {
 test {
     my $c = shift;
     my $config = Karasuma::Config::JSON->new_from_config_data({
-        'gitworks.githookhub.hook_url' => q<http://GHH/hook>,
+        'gitworks.githookhub.hook_url' => q<//GHH/hook>,
     });
     my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
@@ -223,7 +292,7 @@ test {
 test {
     my $c = shift;
     my $config = Karasuma::Config::JSON->new_from_config_data({
-        'gitworks.githookhub.hook_url' => q<http://GHH/hook>,
+        'gitworks.githookhub.hook_url' => q<//GHH/hook>,
     });
     my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 
@@ -257,7 +326,7 @@ test {
 test {
     my $c = shift;
     my $config = Karasuma::Config::JSON->new_from_config_data({
-        'gitworks.githookhub.hook_url' => q<http://GHH/hook>,
+        'gitworks.githookhub.hook_url' => q<//GHH/hook>,
     });
     my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
 

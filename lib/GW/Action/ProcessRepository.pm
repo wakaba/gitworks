@@ -58,14 +58,17 @@ sub run_system_command_as_cv {
     my $cv = AE::cv;
 
     my $cv1 = AE::cv;
-    {
+    my $rev = $self->revision;
+    if (defined $rev) {
         my $title = 'GitWorks action - ' . $label . ' - Started';
         $self->commit_status_action->add_commit_status_as_cv(
-            sha => $self->revision,
+            sha => $rev,
             branch => $self->branch,
             state => COMMIT_STATUS_PENDING,
             description => $title,
         )->cb(sub { $cv1->send });
+    } else {
+        $cv1->send;
     }
 
     $cv1->cb(sub {
@@ -97,10 +100,16 @@ sub run_system_command_as_cv {
         )->cb(sub {
             my $return = $_[0]->recv;
             my $failed = $return >> 8;
+            my $rev = $self->revision;
+            unless (defined $rev) {
+                $cv->send(!$failed);
+                return;
+            }
+
             my $end_time = time;
             $output .= sprintf "Exited with status %d (%.2fs)\n",
                 $return >> 8, $end_time - $start_time;
-        
+            
             my $title = 'GitWorks action - ' . $label . ' - ' . ($failed ? 'Failed' : 'Succeeded');
             my $log_info = $self->log_action->add_log(
                 branch => $self->branch,
@@ -124,17 +133,22 @@ sub run_system_command_as_cv {
 sub report_failure_as_cv {
     my ($self, $message, $label) = @_;
     my $cv = AE::cv;
+    my $rev = $self->revision;
+    unless (defined $rev) {
+        $cv->send;
+        return $cv;
+    }
     
     my $output = $label . "\n" . $message;
     my $title = 'GitWorks action - ' . $label . ' - Failed';
     my $log_info = $self->log_action->add_log(
         branch => $self->branch,
-        sha => $self->revision,
+        sha => $rev,
         title => $title,
         data => $output,
     );
     $self->commit_status_action->add_commit_status_as_cv(
-        sha => $self->revision,
+        sha => $rev,
         branch => $self->branch,
         state => COMMIT_STATUS_FAILURE,
         target_url => $self->url_prefix . $log_info->{logs_url},
@@ -255,42 +269,47 @@ sub run_action_as_cv {
     }
 
     $self->clone_as_cv->cb(sub {
-        if ($action eq 'make') {
-            $self->run_system_command_as_cv(
-                "cd @{[quotemeta $self->temp_repo_d]} && (make @{[quotemeta $args->{rule}]})",
-                "make $args->{rule}",
-            )->cb(sub {
-                $cv->send($_[0]->recv);
-            });
-        } elsif ($action eq 'command') {
-            my $command = $args->{command};
-            my $onmessage = $self->onmessage;
-            if ($command =~ /\A[0-9A-Za-z_]+\z/ and
-                -f (my $command_f = $self->get_command_f($command))) {
+        $self->current_revision_as_cv->cb(sub {
+            my $rev = $_[0]->recv;
+            $self->revision($rev) if $rev;
+
+            if ($action eq 'make') {
                 $self->run_system_command_as_cv(
-                    "cd @{[quotemeta $self->temp_repo_d]} && sh @{[$command_f->absolute]} @{[map { quotemeta } @{$args->{command_args} or []}]}",
-                    (join ' ', $command, @{$args->{command_args} or []}),
+                    "cd @{[quotemeta $self->temp_repo_d]} && (make @{[quotemeta $args->{rule}]})",
+                    "make $args->{rule}",
                 )->cb(sub {
                     $cv->send($_[0]->recv);
                 });
+            } elsif ($action eq 'command') {
+                my $command = $args->{command};
+                my $onmessage = $self->onmessage;
+                if ($command =~ /\A[0-9A-Za-z_]+\z/ and
+                    -f (my $command_f = $self->get_command_f($command))) {
+                    $self->run_system_command_as_cv(
+                        "cd @{[quotemeta $self->temp_repo_d]} && sh @{[$command_f->absolute]} @{[map { quotemeta } @{$args->{command_args} or []}]}",
+                        (join ' ', $command, @{$args->{command_args} or []}),
+                    )->cb(sub {
+                        $cv->send($_[0]->recv);
+                    });
+                } else {
+                    $self->report_failure_as_cv(
+                        "Command |$command| (@{[$self->get_command_f($command)]}) is not defined",
+                        (join ' ', $command, @{$args->{command_args} or []}),
+                    )->cb(sub {
+                        $cv->send(0);
+                    });
+                }
+            } elsif ($action eq 'cennel.add-operations') {
+                $self->cennel_add_operations_as_cv->cb(sub { $cv->send });
             } else {
                 $self->report_failure_as_cv(
-                    "Command |$command| (@{[$self->get_command_f($command)]}) is not defined",
-                    (join ' ', $command, @{$args->{command_args} or []}),
+                    "Action |$action| is not supported",
+                    $action,
                 )->cb(sub {
                     $cv->send(0);
                 });
             }
-        } elsif ($action eq 'cennel.add-operations') {
-            $self->cennel_add_operations_as_cv->cb(sub { $cv->send });
-        } else {
-            $self->report_failure_as_cv(
-                "Action |$action| is not supported",
-                $action,
-            )->cb(sub {
-                $cv->send(0);
-            });
-        }
+        });
     });
     return $cv;
 }
