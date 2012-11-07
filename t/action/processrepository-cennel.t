@@ -230,7 +230,7 @@ test {
     });
 
     my $temp_d = dir(tempdir(CLEANUP => 1));
-    system qq{cd $temp_d && git init && mkdir -p config/cennel && echo '[{"branch":"master","role":"hoge 1","task":"task 1"},{"branch":"devel","role":"hoge2","task":"task 2"}]' > config/cennel/deployrole2.json && git add config && git commit -m New && git checkout devel};
+    system qq{cd $temp_d && git init && mkdir -p config/cennel && echo '{"common":[{"branch":"master","role":"hoge 1","task":"task 1"},{"branch":"devel","role":"hoge2","task":"task 2"}]}' > config/cennel/deployrole2.json && git add config && git commit -m New && git checkout devel};
     my $rev = `cd $temp_d && git rev-parse HEAD`;
     chomp $rev;
 
@@ -346,7 +346,7 @@ test {
     });
 
     my $temp_d = dir(tempdir(CLEANUP => 1));
-    system qq{cd $temp_d && git init && mkdir -p config/cennel && echo '[{"branch":"master","role":"hoge 1","task":"task 1"},{"branch":"master","role":"hoge2","task":"task 2"}]' > config/cennel/ho-ge.json && git add config && git commit -m New};
+    system qq{cd $temp_d && git init && mkdir -p config/cennel && echo '{"common":[{"branch":"master","role":"hoge 1","task":"task 1"},{"branch":"master","role":"hoge2","task":"task 2"}]}' > config/cennel/ho-ge.json && git add config && git commit -m New};
     my $rev = `cd $temp_d && git rev-parse HEAD`;
     chomp $rev;
 
@@ -397,6 +397,72 @@ test {
         } $c;
     });
 } n => 1, wait => $mysql, name => 'multiple, one-file format';
+
+test {
+    my $c = shift;
+    my $dbreg = GW::MySQL->load_by_f($c->received_data->dsns_json_f);
+    my $key = int rand 100000;
+
+    my $config = Karasuma::Config::JSON->new_from_config_data({
+        'gitworks.cennel.jobs_url' => qq<http://$cennel_host/$key/jobs>,
+        'gitworks.cennel.api_key' => undef,
+    });
+
+    my $temp_d = dir(tempdir(CLEANUP => 1));
+    system qq{cd $temp_d && git init && mkdir -p config/cennel && echo '{"by_source_role":{"\@role1":[{"branch":"master","role":"hoge 1","task":"task 1"},{"branch":"master","role":"hoge2","task":"task 2"}], "\@role2":[{"branch":"master","role":"fuga 4", "task": "task 55"}]}}' > config/cennel/ho-ge.json && git add config && git commit -m New};
+    my $rev = `cd $temp_d && git rev-parse HEAD`;
+    chomp $rev;
+
+    my $cached_d = dir(tempdir(CLEANUP => 1));
+
+    my $action = GW::Action::ProcessRepository->new_from_job_and_cached_repo_set_d({
+        repository_url => $temp_d->stringify,
+        repository_branch => 'master',
+        repository_revision => $rev,
+        action_type => 'cennel.add-operations',
+        args => {
+            operation_set_name => 'ho-ge',
+            prev_hop => {role => '@role1'},
+        },
+    }, $cached_d);
+    $action->dbreg($dbreg);
+    $action->karasuma_config($config);
+    $action->run_action_as_cv->cb(sub {
+        test {
+            http_get
+                url => qq<http://$cennel_host/$key/devel/jobs>,
+                anyevent => 1,
+                cb => sub {
+                    my (undef, $res) = @_;
+                    test {
+                        my $json = json_bytes2perl $res->content;
+                        eq_or_diff [sort { $a->{hook_args}->{task} cmp $b->{hook_args}->{task} } @$json], [sort { $a->{hook_args}->{task} cmp $b->{hook_args}->{task} } 
+                            {
+                                repository => {url => $temp_d->stringify},
+                                ref => 'refs/heads/master',
+                                after => $rev,
+                                hook_args => {
+                                    role => 'hoge 1',
+                                    task => 'task 1',
+                                },
+                            },
+                            {
+                                repository => {url => $temp_d->stringify},
+                                ref => 'refs/heads/master',
+                                after => $rev,
+                                hook_args => {
+                                    role => 'hoge2',
+                                    task => 'task 2',
+                                },
+                            },
+                        ];
+                        done $c;
+                        undef $c;
+                    } $c;
+                };
+        } $c;
+    });
+} n => 1, wait => $mysql, name => 'multiple, one-file format, selective';
 
 run_tests;
 Test::GW::CennelServer->stop_server_as_cv->recv;

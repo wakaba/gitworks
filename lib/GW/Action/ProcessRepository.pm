@@ -168,18 +168,25 @@ sub cennel_add_operations_as_cv {
         if (-f $defs_f) {
             $cv->begin;
             my $json = file2perl $defs_f;
-            if ($json and ref $json eq 'ARRAY') {
+            if ($json and ref $json eq 'HASH') {
                 my $this_branch = $self->branch;
-                for my $def (@$json) {
-                    if (defined $def->{branch} and
-                        defined $this_branch and
-                        $def->{branch} eq $this_branch) {
-                        $cv->begin;
-                        $self->cennel_add_operation_as_cv(
-                            $def->{role}, $def->{task},
-                        )->cb(sub {
-                            $cv->end;
-                        });
+                for (
+                    $json->{common},
+                    $json->{by_source_role}->{$self->{job}->{args}->{prev_hop}->{role} || ''},
+                ) {
+                    next unless $_;
+                    next unless ref $_ eq 'ARRAY';
+                    for my $def (@$_) {
+                        if (defined $def->{branch} and
+                            defined $this_branch and
+                            $def->{branch} eq $this_branch) {
+                            $cv->begin;
+                            $self->cennel_add_operation_as_cv(
+                               $def->{role}, $def->{task},
+                            )->cb(sub {
+                               $cv->end;
+                           });
+                        }
                     }
                 }
             }
