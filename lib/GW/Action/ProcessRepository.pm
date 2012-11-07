@@ -159,36 +159,68 @@ sub report_failure_as_cv {
 }
 
 sub cennel_add_operations_as_cv {
-    my $self = shift;
+    my ($self, $operation_set_name) = @_;
     my $cv = AE::cv;
 
     my $repo_d = $self->temp_repo_d;
-    my $defs_d = $repo_d->subdir('config', 'cennel', 'deploy');
-
-    if (-d $defs_d) {
-        $cv->begin;
-        my $this_branch = $self->branch;
-        for ($defs_d->children) {
-            next unless $_ =~ m{/[^/]+\.json$} and -f $_;
+    if (defined $operation_set_name) {
+        my $defs_f = $repo_d->file('config', 'cennel', $operation_set_name . '.json');
+        if (-f $defs_f) {
             $cv->begin;
-            my $json = file2perl $_;
-            if ($json and ref $json eq 'HASH') {
-                if (defined $json->{branch} and
-                    defined $this_branch and
-                    $json->{branch} eq $this_branch) {
-                    $self->cennel_add_operation_as_cv($json->{role}, $json->{task})->cb(sub {
+            my $json = file2perl $defs_f;
+            if ($json and ref $json eq 'ARRAY') {
+                my $this_branch = $self->branch;
+                for my $def (@$json) {
+                    if (defined $def->{branch} and
+                        defined $this_branch and
+                        $def->{branch} eq $this_branch) {
+                        $cv->begin;
+                        $self->cennel_add_operation_as_cv(
+                            $def->{role}, $def->{task},
+                        )->cb(sub {
+                            $cv->end;
+                        });
+                    }
+                }
+            }
+            $cv->end;
+        } else {
+            $self->report_failure_as_cv(
+                "Operation set |$operation_set_name| is not defined",
+                $operation_set_name,
+            )->cb(sub {
+                $cv->send;
+            });
+        }
+    } else {
+        my $defs_d = $repo_d->subdir('config', 'cennel', 'deploy');
+        if (-d $defs_d) {
+            $cv->begin;
+            my $this_branch = $self->branch;
+            for ($defs_d->children) {
+                next unless $_ =~ m{/[^/]+\.json$} and -f $_;
+                $cv->begin;
+                my $json = file2perl $_;
+                if ($json and ref $json eq 'HASH') {
+                    if (defined $json->{branch} and
+                        defined $this_branch and
+                        $json->{branch} eq $this_branch) {
+                        $self->cennel_add_operation_as_cv(
+                            $json->{role}, $json->{task},
+                        )->cb(sub {
+                            $cv->end;
+                        });
+                    } else {
                         $cv->end;
-                    });
+                    }
                 } else {
                     $cv->end;
                 }
-            } else {
-                $cv->end;
             }
+            $cv->end;
+        } else {
+            $cv->send;
         }
-        $cv->end;
-    } else {
-        $cv->send;
     }
 
     return $cv;
@@ -300,7 +332,7 @@ sub run_action_as_cv {
                     });
                 }
             } elsif ($action eq 'cennel.add-operations') {
-                $self->cennel_add_operations_as_cv->cb(sub { $cv->send });
+                $self->cennel_add_operations_as_cv($args->{operation_set_name})->cb(sub { $cv->send($_[0]->recv) });
             } else {
                 $self->report_failure_as_cv(
                     "Action |$action| is not supported",
