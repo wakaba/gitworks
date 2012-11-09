@@ -422,7 +422,9 @@ test {
         action_type => 'cennel.add-operations',
         args => {
             operation_set_name => 'ho-ge',
-            prev_hop => {role => '@role1'},
+            prev_hop => {
+                hook_args => {description => 'Cennel result - @role1 restart'},
+            },
         },
     }, $cached_d);
     $action->dbreg($dbreg);
