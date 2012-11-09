@@ -64,7 +64,7 @@ sub process {
                 || $app->throw_error(400, reason_phrase => 'bad after'),
         );
         $action->db_registry($reg);
-        $json->{hook_args}->{prev_hop} = $json->{current};
+        $json->{hook_args}->{action_args}->{prev_hop} = $json->{current};
         $action->insert_job(
             $json->{hook_args}->{action_type}
                 || $app->throw_error(400, reason_phrase => 'bad hook_args.action_type'),
