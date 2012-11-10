@@ -166,6 +166,7 @@ sub cennel_add_operations_as_cv {
     if (defined $operation_set_name) {
         my $defs_f = $repo_d->file('config', 'cennel', $operation_set_name . '.json');
         if (-f $defs_f) {
+            $self->onmessage->("Finding $defs_f... found");
             $cv->begin;
             my $json = file2perl $defs_f;
             if ($json and ref $json eq 'HASH') {
@@ -178,6 +179,10 @@ sub cennel_add_operations_as_cv {
                         '';
                     }
                 };
+                if ($@) {
+                    warn $@;
+                    $role = '';
+                }
                 for (
                     $json->{common},
                     $json->{by_source_role}->{$role},
@@ -188,12 +193,15 @@ sub cennel_add_operations_as_cv {
                         if (defined $def->{branch} and
                             defined $this_branch and
                             $def->{branch} eq $this_branch) {
+                            $self->onmessage->("Branch $def->{branch} matched");
                             $cv->begin;
                             $self->cennel_add_operation_as_cv(
                                $def->{role}, $def->{task},
                             )->cb(sub {
                                $cv->end;
                            });
+                        } else {
+                            $self->onmessage->("Branch unmatched (@{[defined $def->{branch} ? $def->{branch} : '(undef)']} expected / @{[defined $this_branch ? $this_branch : '(undef)']}) actual");
                         }
                     }
                 }
