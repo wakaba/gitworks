@@ -409,7 +409,7 @@ test {
     });
 
     my $temp_d = dir(tempdir(CLEANUP => 1));
-    system qq{cd $temp_d && git init && mkdir -p config/cennel && echo '{"by_source_role":{"\@role1":[{"branch":"master","role":"hoge 1","task":"task 1"},{"branch":"master","role":"hoge2","task":"task 2"}], "\@role2":[{"branch":"master","role":"fuga 4", "task": "task 55"}]}}' > config/cennel/ho-ge.json && git add config && git commit -m New};
+    system qq{cd $temp_d && git init && mkdir -p config/cennel && echo '{"by_source_role":{"\@role1":[{"branch":"master","role":"hoge 1","task":"task 1"},{"role":"hoge2","task":"task 2"}], "\@role2":[{"branch":"master","role":"fuga 4", "task": "task 55"}]}}' > config/cennel/ho-ge.json && git add config && git commit -m New};
     my $rev = `cd $temp_d && git rev-parse HEAD`;
     chomp $rev;
 

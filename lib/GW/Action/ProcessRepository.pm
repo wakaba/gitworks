@@ -190,9 +190,10 @@ sub cennel_add_operations_as_cv {
                     next unless $_;
                     next unless ref $_ eq 'ARRAY';
                     for my $def (@$_) {
-                        if (defined $def->{branch} and
-                            defined $this_branch and
-                            $def->{branch} eq $this_branch) {
+                        if ((defined $def->{branch} and
+                             defined $this_branch and
+                             $def->{branch} eq $this_branch) or
+                            (not defined $def->{branch})) {
                             $self->onmessage->("Branch $def->{branch} matched");
                             $cv->begin;
                             $self->cennel_add_operation_as_cv(
@@ -201,7 +202,7 @@ sub cennel_add_operations_as_cv {
                                $cv->end;
                            });
                         } else {
-                            $self->onmessage->("Branch unmatched (@{[defined $def->{branch} ? $def->{branch} : '(undef)']} expected / @{[defined $this_branch ? $this_branch : '(undef)']}) actual");
+                            $self->onmessage->("Branch unmatched (@{[defined $def->{branch} ? $def->{branch} : '(undef)']} expected / @{[defined $this_branch ? $this_branch : '(undef)']} actual)");
                         }
                     }
                 }
@@ -216,6 +217,7 @@ sub cennel_add_operations_as_cv {
             });
         }
     } else {
+        # Old style (deprecated)
         my $defs_d = $repo_d->subdir('config', 'cennel', 'deploy');
         if (-d $defs_d) {
             $cv->begin;
