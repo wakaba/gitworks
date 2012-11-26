@@ -86,7 +86,11 @@ sub prep_f {
 
 sub mysql_server {
     my $self = shift;
-    return $self->{mysql_server} ||= Test::AnyEvent::MySQL::CreateDatabase->new;
+    return $self->{mysql_server} ||= do {
+        my $mysql = Test::AnyEvent::MySQL::CreateDatabase->new;
+        $mysql->perl($self->perl);
+        $mysql;
+    };
 }
 
 sub cached_repo_set_d {
@@ -121,6 +125,11 @@ sub start_mysql_server_as_cv {
     return $cv;
 }
 
+sub perl {
+    my $self = shift;
+    return $self->{perl} ||= $self->root_d->file('perl')->stringify;
+}
+
 # ------ Web server ------
 
 sub psgi_f {
@@ -151,6 +160,7 @@ sub _start_web_server {
     local $ENV{KARASUMA_CONFIG_FILE_DIR_NAME} = $self->karasuma_config_keys_d;
 
     $self->{web_server} = my $server = Test::AnyEvent::plackup->new;
+    $server->perl($self->perl);
     $server->app($self->psgi_f);
     $server->server('Twiggy');
 
@@ -214,7 +224,7 @@ sub start_workaholicd_as_cv {
         my $pid;
         $self->{workaholicd_cv} = run_cmd
             [
-                'perl',
+                $self->perl,
                 $self->workaholicd_f->stringify, 
                 $self->workaholicd_conf_f->stringify,
             ],
