@@ -194,7 +194,7 @@ sub cennel_add_operations_as_cv {
                              defined $this_branch and
                              $def->{branch} eq $this_branch) or
                             (not defined $def->{branch})) {
-                            $self->onmessage->("Branch $def->{branch} matched");
+                            $self->onmessage->("Branch $this_branch matched");
                             $cv->begin;
                             $self->cennel_add_operation_as_cv(
                                $def->{role}, $def->{task},
